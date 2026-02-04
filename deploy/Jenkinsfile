@@ -1,0 +1,214 @@
+pipeline {
+    agent any
+
+    environment {
+        def KUBECONFIG_CREDENTIAL_ID = 'dev-kubeconfig'
+        def K8S_NAMESPACE = 'evc-dev'
+        def PROJECT_NAME = "evc"
+        def SERVICE_NAME = 'evc-steve'
+        def HELM_FOLDER = "./evc-helm/dev/evc-steve"
+        def HELM_VALUES_FILE = "values.yaml"
+		def ENV_FILE = './src/main/resources/config/docker/main.properties.development'
+
+		def APP_REPO = "git@github.com:tdtuan97/evc-steve.git"
+		def PROJECT = "evc"
+		def APP = "steve"
+		def REPOSITORY_URI = "https://ghcr.io"
+		def IMAGE_REPO_NAME="${PROJECT}/${env.BRANCH_NAME}/${SERVICE}"
+		def BUILD_DATE = sh(script: 'date +"%Y-%m-%d"', returnStdout: true).trim()
+		def IMAGE_TAG = "${BUILD_DATE}-build-${env.BUILD_NUMBER}"
+		def REGISTRY_IMAGE = "ghcr.io/tdtuan97/${IMAGE_REPO_NAME}"
+		def GITHUB_TOKEN = ""
+		def GITHUB_CREDENTIAL = "github-sshkey"
+		def GITHUB_TOKEN_CREDENTIAL_ID = 'github-token'
+
+        def DB_OCPP_HOST_ID     = 'dev-database-host'
+        def DB_OCPP_ACCOUNT_ID  = 'dev-database-account'
+
+        // NATS CREDENTIALS
+        def NATS_ACCOUNT_ID = 'dev-nats-account'
+
+        // APP CREDENTIALS
+        def AUTH_USER     = 'evc'
+        def AUTH_PASSWORD = 'evc2023'
+        def WEB_API_KEY = 'evc'
+        def WEB_API_VALUE = 'evc2023'
+    }
+
+    stages {
+        stage('Set Environment Variables for main') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    KUBECONFIG_CREDENTIAL_ID = 'evc-prod-kubeconfig'
+                    K8S_NAMESPACE = 'evc-prod'
+                    HELM_FOLDER = "./evc-helm/prod/evc-steve"
+                    ENV_FILE = './src/main/resources/config/docker/main.properties.production'
+
+                    DB_OCPP_HOST_ID = 'evc-prod-db-ocpp-host'
+                    DB_OCPP_ACCOUNT_ID = 'evc-prod-db-ocpp-account'
+
+                    NATS_ACCOUNT_ID = 'evc-prod-nats-account'
+
+                    AUTH_USER = 'evc'
+                    AUTH_PASSWORD = 'st3wEZS78izkyyBA'
+                    WEB_API_KEY = 'evc'
+                    WEB_API_VALUE = 'st3wEZS78izkyyBA'
+                }
+            }
+        }
+
+        stage('Cloning Git') {
+		    steps {
+		        echo "Clone git repository from branch: ${env.BRANCH_NAME}"
+		        checkout(
+		            [
+		                $class: 'GitSCM',
+		                branches: [[name: "*/${env.BRANCH_NAME}"]],
+		                doGenerateSubmoduleConfigurations: false,
+		                extensions: [],
+		                submoduleCfg: [],
+		                userRemoteConfigs: [
+		                    [
+		                        credentialsId: env.GITHUB_CREDENTIAL,
+		                        url: "$APP_REPO"
+		                    ]
+		                ]
+		            ]
+		        )
+		    }
+		}
+
+        stage('Build & Push docker image to registry') {
+            steps {
+                script {
+                        withCredentials([string(credentialsId: env.GITHUB_TOKEN_CREDENTIAL_ID, variable: 'GITHUB_TOKEN')]) {
+                            sh "echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin"
+                        }
+                    }
+
+                    script {
+                        echo "Pull latest image."
+                        docker.withRegistry(env.REPOSITORY_URI) {
+                            sh "docker pull ${REGISTRY_IMAGE}:latest || true"
+                        }
+                    }
+
+                    script {
+                        docker.withRegistry(env.REPOSITORY_URI) {
+                            dockerImage = docker.build("${REGISTRY_IMAGE}:${IMAGE_TAG}", '-f Dockerfile --cache-from ${REGISTRY_IMAGE}:latest .')
+                            dockerImage.push("${IMAGE_TAG}")
+                            dockerImage.push('latest')
+                        }
+                    }
+            }
+        }
+
+		stage('Remove docker image tag') {
+            steps {
+            	script {
+            	    sh """
+            	        docker images --filter=reference="${REGISTRY_IMAGE}" --filter=dangling=true --quiet | xargs -r docker image rm
+            	    """
+            	}
+            }
+        }
+
+        stage('Generate .env & Apply ConfigMap') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: DB_OCPP_HOST_ID,
+                        usernameVariable: 'OCPP_DB_HOST',
+                        passwordVariable: 'OCPP_DB_PORT',
+                    ),
+                    usernamePassword(
+                        credentialsId: DB_OCPP_ACCOUNT_ID,
+                        usernameVariable: 'OCPP_DB_USER',
+                        passwordVariable: 'OCPP_DB_PASS',
+                    ),
+                    usernamePassword(
+                        credentialsId: NATS_ACCOUNT_ID,
+                        usernameVariable: 'NATS_USERNAME',
+                        passwordVariable: 'NATS_PASSWORD',
+                    ),
+                ]) {
+                    sh """
+                        rm -f main.properties
+                        cp ${ENV_FILE} main.properties
+
+                        sed -i 's|{OCPP_DB_HOST}|${OCPP_DB_HOST}|g' main.properties
+                        sed -i 's|{OCPP_DB_PORT}|${OCPP_DB_PORT}|g' main.properties
+                        sed -i 's|{OCPP_DB_USER}|${OCPP_DB_USER}|g' main.properties
+                        sed -i 's|{OCPP_DB_PASS}|${OCPP_DB_PASS}|g' main.properties
+
+                        sed -i 's|{AUTH_USER}|${AUTH_USER}|g' main.properties
+                        sed -i 's|{AUTH_PASSWORD}|${AUTH_PASSWORD}|g' main.properties
+                        sed -i 's|{WEB_API_KEY}|${WEB_API_KEY}|g' main.properties
+                        sed -i 's|{WEB_API_VALUE}|${WEB_API_VALUE}|g' main.properties
+
+                        sed -i 's|{NATS_USERNAME}|${NATS_USERNAME}|g' main.properties
+                        sed -i 's|{NATS_PASSWORD}|${NATS_PASSWORD}|g' main.properties
+                    """
+                }
+
+                withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIAL_ID}", variable: 'KUBECONFIG')]) {
+                    sh """
+                        export KUBECONFIG=${KUBECONFIG}
+                        kubectl delete configmap ${SERVER_1_SERVICE_NAME}-env -n ${K8S_NAMESPACE} --ignore-not-found
+                        kubectl create configmap ${SERVER_1_SERVICE_NAME}-env --from-file=main.properties=main.properties -n ${K8S_NAMESPACE}
+
+                        kubectl delete configmap ${SERVER_2_SERVICE_NAME}-env -n ${K8S_NAMESPACE} --ignore-not-found
+                        kubectl create configmap ${SERVER_2_SERVICE_NAME}-env --from-file=main.properties=main.properties -n ${K8S_NAMESPACE}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes - Server 1') {
+            steps {
+                dir('infra') {
+                    git credentialsId: 'github-sshkey',
+                        url: 'git@github.com:tdtuan97/echarge-infras.git',
+                        branch: 'main'
+
+                    echo "Update chart"
+                    withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIAL_ID}", variable: 'KUBECONFIG')]) {
+                        sh """
+                            export KUBECONFIG=${KUBECONFIG}
+
+                            helm upgrade --install ${SERVER_1_SERVICE_NAME} ${SERVER_1_HELM_FOLDER} \\
+                            --namespace ${K8S_NAMESPACE} \\
+                            -f ${SERVER_1_HELM_FOLDER}/${SERVER_1_HELM_VALUES_FILE} \\
+                            --set image.tag=${IMAGE_TAG}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes - Server 2') {
+            steps {
+                dir('infra') {
+                    git credentialsId: 'github-sshkey',
+                        url: 'git@github.com:tdtuan97/echarge-infras.git',
+                        branch: 'main'
+
+                    echo "Update chart"
+                    withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIAL_ID}", variable: 'KUBECONFIG')]) {
+                        sh """
+                            export KUBECONFIG=${KUBECONFIG}
+
+                            helm upgrade --install ${SERVER_2_SERVICE_NAME} ${SERVER_2_HELM_FOLDER} \\
+                            --namespace ${K8S_NAMESPACE} \\
+                            -f ${SERVER_2_HELM_FOLDER}/${SERVER_2_HELM_VALUES_FILE} \\
+                            --set image.tag=${IMAGE_TAG}
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
