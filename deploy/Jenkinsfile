@@ -14,7 +14,7 @@ pipeline {
 		def PROJECT = "evc"
 		def APP = "steve"
 		def REPOSITORY_URI = "https://ghcr.io"
-		def IMAGE_REPO_NAME="${PROJECT}/${env.BRANCH_NAME}/${SERVICE}"
+		def IMAGE_REPO_NAME="${PROJECT}/${env.BRANCH_NAME}/${SERVICE_NAME}"
 		def BUILD_DATE = sh(script: 'date +"%Y-%m-%d"', returnStdout: true).trim()
 		def IMAGE_TAG = "${BUILD_DATE}-build-${env.BUILD_NUMBER}"
 		def REGISTRY_IMAGE = "ghcr.io/tdtuan97/${IMAGE_REPO_NAME}"
@@ -24,6 +24,7 @@ pipeline {
 
         def DB_OCPP_HOST_ID     = 'dev-database-host'
         def DB_OCPP_ACCOUNT_ID  = 'dev-database-account'
+        def DB_DATABASE         = 'stevedb'
 
         // NATS CREDENTIALS
         def NATS_ACCOUNT_ID = 'dev-nats-account'
@@ -49,6 +50,7 @@ pipeline {
 
                     DB_OCPP_HOST_ID = 'evc-prod-db-ocpp-host'
                     DB_OCPP_ACCOUNT_ID = 'evc-prod-db-ocpp-account'
+                    DB_DATABASE = 'stevedb'
 
                     NATS_ACCOUNT_ID = 'evc-prod-nats-account'
 
@@ -99,10 +101,36 @@ pipeline {
                     }
                 }
                 script {
-                    docker.withRegistry(env.REPOSITORY_URI) {
-                        dockerImage = docker.build("${env.REGISTRY_IMAGE}:${env.IMAGE_TAG}", "-f Dockerfile --cache-from ${env.REGISTRY_IMAGE}:latest .")
-                        dockerImage.push("${env.IMAGE_TAG}")
-                        dockerImage.push('latest')
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: env.DB_OCPP_HOST_ID,
+                            usernameVariable: 'OCPP_DB_HOST',
+                            passwordVariable: 'OCPP_DB_PORT',
+                        ),
+                        usernamePassword(
+                            credentialsId: env.DB_OCPP_ACCOUNT_ID,
+                            usernameVariable: 'OCPP_DB_USER',
+                            passwordVariable: 'OCPP_DB_PASS',
+                        ),
+                    ]) {
+                        docker.withRegistry(env.REPOSITORY_URI) {
+                            sh """
+                                docker build \\
+                                    --build-arg DB_HOST=\${OCPP_DB_HOST} \\
+                                    --build-arg DB_PORT=\${OCPP_DB_PORT} \\
+                                    --build-arg DB_USERNAME=\${OCPP_DB_USER} \\
+                                    --build-arg DB_PASSWORD=\${OCPP_DB_PASS} \\
+                                    --build-arg DB_DATABASE=ocpp_stevedb \\
+                                    --cache-from ${env.REGISTRY_IMAGE}:latest \\
+                                    -f k8s/docker/Dockerfile \\
+                                    -t ${env.REGISTRY_IMAGE}:${env.IMAGE_TAG} \\
+                                    -t ${env.REGISTRY_IMAGE}:latest \\
+                                    .
+                            """
+                            dockerImage = docker.image("${env.REGISTRY_IMAGE}:${env.IMAGE_TAG}")
+                            dockerImage.push("${env.IMAGE_TAG}")
+                            dockerImage.push('latest')
+                        }
                     }
                 }
             }
