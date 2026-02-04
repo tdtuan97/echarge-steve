@@ -84,35 +84,37 @@ pipeline {
         stage('Build & Push docker image to registry') {
             steps {
                 script {
-                        withCredentials([string(credentialsId: env.GITHUB_TOKEN_CREDENTIAL_ID, variable: 'GITHUB_TOKEN')]) {
-                            sh "echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin"
-                        }
+                    env.BUILD_DATE = sh(script: 'date +"%Y-%m-%d"', returnStdout: true).trim()
+                    env.IMAGE_TAG = "${env.BUILD_DATE}-build-${env.BUILD_NUMBER}"
+                }
+                script {
+                    withCredentials([string(credentialsId: env.GITHUB_TOKEN_CREDENTIAL_ID, variable: 'GITHUB_TOKEN')]) {
+                        sh "echo \$GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin"
                     }
-
-                    script {
-                        echo "Pull latest image."
-                        docker.withRegistry(env.REPOSITORY_URI) {
-                            sh "docker pull ${REGISTRY_IMAGE}:latest || true"
-                        }
+                }
+                script {
+                    echo "Pull latest image."
+                    docker.withRegistry(env.REPOSITORY_URI) {
+                        sh "docker pull ${env.REGISTRY_IMAGE}:latest || true"
                     }
-
-                    script {
-                        docker.withRegistry(env.REPOSITORY_URI) {
-                            dockerImage = docker.build("${REGISTRY_IMAGE}:${IMAGE_TAG}", '-f Dockerfile --cache-from ${REGISTRY_IMAGE}:latest .')
-                            dockerImage.push("${IMAGE_TAG}")
-                            dockerImage.push('latest')
-                        }
+                }
+                script {
+                    docker.withRegistry(env.REPOSITORY_URI) {
+                        dockerImage = docker.build("${env.REGISTRY_IMAGE}:${env.IMAGE_TAG}", "-f Dockerfile --cache-from ${env.REGISTRY_IMAGE}:latest .")
+                        dockerImage.push("${env.IMAGE_TAG}")
+                        dockerImage.push('latest')
                     }
+                }
             }
         }
 
-		stage('Remove docker image tag') {
+        stage('Remove docker image tag') {
             steps {
-            	script {
-            	    sh """
-            	        docker images --filter=reference="${REGISTRY_IMAGE}" --filter=dangling=true --quiet | xargs -r docker image rm
-            	    """
-            	}
+                script {
+                    sh """
+                        docker images --filter=reference="${env.REGISTRY_IMAGE}" --filter=dangling=true --quiet | xargs -r docker image rm
+                    """
+                }
             }
         }
 
@@ -120,45 +122,44 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: DB_OCPP_HOST_ID,
+                        credentialsId: env.DB_OCPP_HOST_ID,
                         usernameVariable: 'OCPP_DB_HOST',
                         passwordVariable: 'OCPP_DB_PORT',
                     ),
                     usernamePassword(
-                        credentialsId: DB_OCPP_ACCOUNT_ID,
+                        credentialsId: env.DB_OCPP_ACCOUNT_ID,
                         usernameVariable: 'OCPP_DB_USER',
                         passwordVariable: 'OCPP_DB_PASS',
                     ),
                     usernamePassword(
-                        credentialsId: NATS_ACCOUNT_ID,
+                        credentialsId: env.NATS_ACCOUNT_ID,
                         usernameVariable: 'NATS_USERNAME',
                         passwordVariable: 'NATS_PASSWORD',
                     ),
                 ]) {
                     sh """
                         rm -f application.properties
-                        cp ${ENV_FILE} application.properties
+                        cp ${env.ENV_FILE} application.properties
 
-                        sed -i 's|{OCPP_DB_HOST}|${OCPP_DB_HOST}|g' application.properties
-                        sed -i 's|{OCPP_DB_PORT}|${OCPP_DB_PORT}|g' application.properties
-                        sed -i 's|{OCPP_DB_USER}|${OCPP_DB_USER}|g' application.properties
-                        sed -i 's|{OCPP_DB_PASS}|${OCPP_DB_PASS}|g' application.properties
+                        sed -i 's|{OCPP_DB_HOST}|'\\${OCPP_DB_HOST}'|g' application.properties
+                        sed -i 's|{OCPP_DB_PORT}|'\\${OCPP_DB_PORT}'|g' application.properties
+                        sed -i 's|{OCPP_DB_USER}|'\\${OCPP_DB_USER}'|g' application.properties
+                        sed -i 's|{OCPP_DB_PASS}|'\\${OCPP_DB_PASS}'|g' application.properties
 
-                        sed -i 's|{AUTH_USER}|${AUTH_USER}|g' application.properties
-                        sed -i 's|{AUTH_PASSWORD}|${AUTH_PASSWORD}|g' application.properties
-                        sed -i 's|{WEB_API_KEY}|${WEB_API_KEY}|g' application.properties
-                        sed -i 's|{WEB_API_VALUE}|${WEB_API_VALUE}|g' application.properties
+                        sed -i 's|{AUTH_USER}|${env.AUTH_USER}|g' application.properties
+                        sed -i 's|{AUTH_PASSWORD}|${env.AUTH_PASSWORD}|g' application.properties
+                        sed -i 's|{WEB_API_KEY}|${env.WEB_API_KEY}|g' application.properties
+                        sed -i 's|{WEB_API_VALUE}|${env.WEB_API_VALUE}|g' application.properties
 
-                        sed -i 's|{NATS_USERNAME}|${NATS_USERNAME}|g' application.properties
-                        sed -i 's|{NATS_PASSWORD}|${NATS_PASSWORD}|g' application.properties
+                        sed -i 's|{NATS_USERNAME}|'\\${NATS_USERNAME}'|g' application.properties
+                        sed -i 's|{NATS_PASSWORD}|'\\${NATS_PASSWORD}'|g' application.properties
                     """
                 }
-
-                withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIAL_ID}", variable: 'KUBECONFIG')]) {
+                withCredentials([file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
                     sh """
-                        export KUBECONFIG=${KUBECONFIG}
-                        kubectl delete configmap ${SERVICE_NAME}-env -n ${K8S_NAMESPACE} --ignore-not-found
-                        kubectl create configmap ${SERVICE_NAME}-env --from-file=application.properties=application.properties -n ${K8S_NAMESPACE}
+                        export KUBECONFIG=\${KUBECONFIG}
+                        kubectl delete configmap ${env.SERVICE_NAME}-env -n ${env.K8S_NAMESPACE} --ignore-not-found
+                        kubectl create configmap ${env.SERVICE_NAME}-env --from-file=application.properties=application.properties -n ${env.K8S_NAMESPACE}
                     """
                 }
             }
@@ -172,14 +173,14 @@ pipeline {
                         branch: 'main'
 
                     echo "Update chart"
-                    withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIAL_ID}", variable: 'KUBECONFIG')]) {
+                    withCredentials([file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
                         sh """
-                            export KUBECONFIG=${KUBECONFIG}
+                            export KUBECONFIG=\${KUBECONFIG}
 
-                            helm upgrade --install ${SERVICE_NAME} ${HELM_FOLDER} \\
-                            --namespace ${K8S_NAMESPACE} \\
-                            -f ${HELM_FOLDER}/${HELM_VALUES_FILE} \\
-                            --set image.tag=${IMAGE_TAG}
+                            helm upgrade --install ${env.SERVICE_NAME} ${env.HELM_FOLDER} \\
+                            --namespace ${env.K8S_NAMESPACE} \\
+                            -f ${env.HELM_FOLDER}/${env.HELM_VALUES_FILE} \\
+                            --set image.tag=${env.IMAGE_TAG}
                         """
                     }
                 }
