@@ -6,7 +6,7 @@ pipeline {
         def K8S_NAMESPACE = 'evc-dev'
         def PROJECT_NAME = "evc"
         def SERVICE_NAME = 'evc-steve'
-        def HELM_FOLDER = "./evc-helm/dev/evc-steve"
+        def HELM_FOLDER = "./evc-helm/dev/evc-ocpp/evc-steve"
         def HELM_VALUES_FILE = "values.yaml"
 		def ENV_FILE = './src/main/resources/application-dev.properties'
 
@@ -45,7 +45,7 @@ pipeline {
                 script {
                     KUBECONFIG_CREDENTIAL_ID = 'evc-prod-kubeconfig'
                     K8S_NAMESPACE = 'evc-prod'
-                    HELM_FOLDER = "./evc-helm/prod/evc-steve"
+                    HELM_FOLDER = "./evc-helm/prod/evc-ocpp/evc-steve"
                     ENV_FILE = './src/main/resources/application-prod.properties'
 
                     DB_OCPP_HOST_ID = 'evc-prod-db-ocpp-host'
