@@ -8,7 +8,7 @@ pipeline {
         def SERVICE_NAME = 'evc-steve'
         def HELM_FOLDER = "./evc-helm/dev/evc-steve"
         def HELM_VALUES_FILE = "values.yaml"
-		def ENV_FILE = './src/main/resources/config/docker/main.properties.development'
+		def ENV_FILE = './src/main/resources/application-dev.properties'
 
 		def APP_REPO = "git@github.com:tdtuan97/evc-steve.git"
 		def PROJECT = "evc"
