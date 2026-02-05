@@ -187,7 +187,7 @@ pipeline {
                     sh """
                         export KUBECONFIG=\${KUBECONFIG}
                         kubectl delete configmap ${env.SERVICE_NAME}-env -n ${env.K8S_NAMESPACE} --ignore-not-found
-                        kubectl create configmap ${env.SERVICE_NAME}-env --from-file=application-docker.properties=application-docker.properties -n ${env.K8S_NAMESPACE}
+                        kubectl create configmap ${env.SERVICE_NAME}-env --from-file=application-kubernetes.properties=application-kubernetes.properties -n ${env.K8S_NAMESPACE}
                     """
                 }
             }
