@@ -239,7 +239,7 @@ public class ChargePointRepositoryImpl implements ChargePointRepository {
     @Override
     public List<ConnectorStatus> getChargePointConnectorStatus(ConnectorStatusForm form) {
         // find out the latest timestamp for each connector
-        Field<Integer> t1Pk = CONNECTOR_STATUS.CONNECTOR_PK.as("t1_pk");
+        Field<Long> t1Pk = CONNECTOR_STATUS.CONNECTOR_PK.as("t1_pk");
         Field<DateTime> t1TsMax = DSL.max(CONNECTOR_STATUS.STATUS_TIMESTAMP).as("t1_ts_max");
         Table<?> t1 = ctx.select(t1Pk, t1TsMax)
                          .from(CONNECTOR_STATUS)
@@ -247,7 +247,7 @@ public class ChargePointRepositoryImpl implements ChargePointRepository {
                          .asTable("t1");
 
         // get the status table with latest timestamps only
-        Field<Integer> t2Pk = CONNECTOR_STATUS.CONNECTOR_PK.as("t2_pk");
+        Field<Long> t2Pk = CONNECTOR_STATUS.CONNECTOR_PK.as("t2_pk");
         Field<DateTime> t2Ts = CONNECTOR_STATUS.STATUS_TIMESTAMP.as("t2_ts");
         Field<String> t2Status = CONNECTOR_STATUS.STATUS.as("t2_status");
         Field<String> t2Error = CONNECTOR_STATUS.ERROR_CODE.as("t2_error");

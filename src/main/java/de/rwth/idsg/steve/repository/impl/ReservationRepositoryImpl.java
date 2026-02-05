@@ -122,7 +122,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
         // Check overlapping
         //isOverlapping(startTimestamp, expiryTimestamp, chargeBoxId);
 
-        SelectConditionStep<Record1<Integer>> connectorPkQuery =
+        SelectConditionStep<Record1<Long>> connectorPkQuery =
                 DSL.select(CONNECTOR.CONNECTOR_PK)
                    .from(CONNECTOR)
                    .where(CONNECTOR.CHARGE_BOX_ID.equal(params.getChargeBoxId()))
@@ -162,7 +162,7 @@ public class ReservationRepositoryImpl implements ReservationRepository {
     }
 
     @Override
-    public void used(Select<Record1<Integer>> connectorPkSelect, String ocppIdTag, int reservationId, int transactionId) {
+    public void used(Select<Record1<Long>> connectorPkSelect, String ocppIdTag, int reservationId, int transactionId) {
         int count = ctx.update(RESERVATION)
                        .set(RESERVATION.STATUS, ReservationStatus.USED.name())
                        .set(RESERVATION.TRANSACTION_PK, transactionId)

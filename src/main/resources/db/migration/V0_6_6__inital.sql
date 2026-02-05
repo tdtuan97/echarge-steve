@@ -42,7 +42,7 @@ CREATE TABLE `user` (
 --
 
 CREATE TABLE `connector` (
-  `connector_pk` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `connector_pk` bigint unsigned NOT NULL AUTO_INCREMENT,
   `chargeBoxId` varchar(30) NOT NULL,
   `connectorId` int(11) NOT NULL,
   PRIMARY KEY (`connector_pk`),
@@ -57,7 +57,7 @@ CREATE TABLE `connector` (
 --
 
 CREATE TABLE `connector_status` (
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `statusTimestamp` timestamp NULL DEFAULT NULL,
   `status` varchar(25) DEFAULT NULL,
   `errorCode` varchar(25) DEFAULT NULL,
@@ -89,7 +89,7 @@ INSERT INTO `dbVersion` (`version`) VALUES ('0.6.6');
 
 CREATE TABLE `transaction` (
   `transaction_pk` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `idTag` varchar(15) NOT NULL,
   `startTimestamp` timestamp NULL DEFAULT NULL,
   `startValue` varchar(45) DEFAULT NULL,
@@ -122,7 +122,7 @@ DELIMITER ;
 --
 
 CREATE TABLE `connector_metervalue` (
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `transaction_pk` int(10) unsigned DEFAULT NULL,
   `valueTimestamp` timestamp NULL DEFAULT NULL,
   `value` varchar(45) DEFAULT NULL,

@@ -176,7 +176,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
                 DSLContext ctx = DSL.using(configuration);
 
                 insertIgnoreConnector(ctx, chargeBoxIdentity, connectorId);
-                int connectorPk = getConnectorPkFromConnector(ctx, chargeBoxIdentity, connectorId);
+                long connectorPk = getConnectorPkFromConnector(ctx, chargeBoxIdentity, connectorId);
                 batchInsertMeterValues(ctx, list, connectorPk, transactionId);
             } catch (Exception e) {
                 log.error("Exception occurred", e);
@@ -195,7 +195,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
                 DSLContext ctx = DSL.using(configuration);
 
                 // First, get connector primary key from transaction table
-                int connectorPk = ctx.select(TRANSACTION_START.CONNECTOR_PK)
+                long connectorPk = ctx.select(TRANSACTION_START.CONNECTOR_PK)
                                      .from(TRANSACTION_START)
                                      .where(TRANSACTION_START.TRANSACTION_PK.equal(transactionId))
                                      .fetchOne()
@@ -211,7 +211,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
     @Override
     public int insertTransaction(InsertTransactionParams p) {
 
-        SelectConditionStep<Record1<Integer>> connectorPkQuery =
+        SelectConditionStep<Record1<Long>> connectorPkQuery =
                 DSL.select(CONNECTOR.CONNECTOR_PK)
                    .from(CONNECTOR)
                    .where(CONNECTOR.CHARGE_BOX_ID.equal(p.getChargeBoxId()))
@@ -289,7 +289,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
         // -------------------------------------------------------------------------
 
         if (shouldInsertConnectorStatusAfterTransactionMsg(p.getChargeBoxId())) {
-            SelectConditionStep<Record1<Integer>> connectorPkQuery =
+            SelectConditionStep<Record1<Long>> connectorPkQuery =
                     DSL.select(TRANSACTION_START.CONNECTOR_PK)
                        .from(TRANSACTION_START)
                        .where(TRANSACTION_START.TRANSACTION_PK.equal(p.getTransactionId()));
@@ -314,7 +314,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
      * to insert this into database multiple times.
      */
     private TransactionDataHolder insertIgnoreTransaction(InsertTransactionParams p,
-                                                          SelectConditionStep<Record1<Integer>> connectorPkQuery) {
+                                                          SelectConditionStep<Record1<Long>> connectorPkQuery) {
         Lock l = transactionTableLocks.get(p.getChargeBoxId());
         l.lock();
         try {
@@ -361,7 +361,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
      * and we have a "more recent" status, it will still be the current status.
      */
     private void insertConnectorStatus(DSLContext ctx,
-                                       SelectConditionStep<Record1<Integer>> connectorPkQuery,
+                                       SelectConditionStep<Record1<Long>> connectorPkQuery,
                                        DateTime timestamp,
                                        TransactionStatusUpdate statusUpdate) {
         try {
@@ -420,7 +420,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
         return (r != null) && (r.value1() == 1);
     }
 
-    private int getConnectorPkFromConnector(DSLContext ctx, String chargeBoxIdentity, int connectorId) {
+    private long getConnectorPkFromConnector(DSLContext ctx, String chargeBoxIdentity, int connectorId) {
         return ctx.select(CONNECTOR.CONNECTOR_PK)
                   .from(CONNECTOR)
                   .where(CONNECTOR.CHARGE_BOX_ID.equal(chargeBoxIdentity))
@@ -429,7 +429,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
                   .value1();
     }
 
-    private void batchInsertMeterValues(DSLContext ctx, List<MeterValue> list, int connectorPk, Integer transactionId) {
+    private void batchInsertMeterValues(DSLContext ctx, List<MeterValue> list, long connectorPk, Integer transactionId) {
         List<ConnectorMeterValueRecord> batch =
                 list.stream()
                     .flatMap(t -> t.getSampledValue()

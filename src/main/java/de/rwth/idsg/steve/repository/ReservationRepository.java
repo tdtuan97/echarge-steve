@@ -49,5 +49,5 @@ public interface ReservationRepository {
 
     void accepted(int reservationId);
     void cancelled(int reservationId);
-    void used(Select<Record1<Integer>> connectorPkSelect, String ocppIdTag, int reservationId, int transactionId);
+    void used(Select<Record1<Long>> connectorPkSelect, String ocppIdTag, int reservationId, int transactionId);
 }

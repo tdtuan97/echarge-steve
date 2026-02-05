@@ -71,7 +71,7 @@ public class ChargingProfileRepositoryImpl implements ChargingProfileRepository 
     public void setProfile(int chargingProfilePk, String chargeBoxId, int connectorId) {
         OcppServerRepositoryImpl.insertIgnoreConnector(ctx, chargeBoxId, connectorId);
 
-        SelectConditionStep<Record1<Integer>> connectorPkSelect = ctx.select(CONNECTOR.CONNECTOR_PK)
+        SelectConditionStep<Record1<Long>> connectorPkSelect = ctx.select(CONNECTOR.CONNECTOR_PK)
                                                                      .from(CONNECTOR)
                                                                      .where(CONNECTOR.CHARGE_BOX_ID.eq(chargeBoxId))
                                                                      .and(CONNECTOR.CONNECTOR_ID.eq(connectorId));
@@ -84,7 +84,7 @@ public class ChargingProfileRepositoryImpl implements ChargingProfileRepository 
 
     @Override
     public void clearProfile(int chargingProfilePk, String chargeBoxId) {
-        SelectConditionStep<Record1<Integer>> connectorPkSelect = ctx.select(CONNECTOR.CONNECTOR_PK)
+        SelectConditionStep<Record1<Long>> connectorPkSelect = ctx.select(CONNECTOR.CONNECTOR_PK)
                                                                      .from(CONNECTOR)
                                                                      .where(CONNECTOR.CHARGE_BOX_ID.eq(chargeBoxId));
 
@@ -106,7 +106,7 @@ public class ChargingProfileRepositoryImpl implements ChargingProfileRepository 
 
         Condition connectorIdCondition = (connectorId == null) ? DSL.trueCondition() : CONNECTOR.CONNECTOR_ID.eq(connectorId);
 
-        SelectConditionStep<Record1<Integer>> connectorPkSelect = ctx.select(CONNECTOR.CONNECTOR_PK)
+        SelectConditionStep<Record1<Long>> connectorPkSelect = ctx.select(CONNECTOR.CONNECTOR_PK)
                                                                      .from(CONNECTOR)
                                                                      .where(CONNECTOR.CHARGE_BOX_ID.eq(chargeBoxId))
                                                                      .and(connectorIdCondition);
