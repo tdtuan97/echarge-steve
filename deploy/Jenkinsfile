@@ -175,21 +175,21 @@ pipeline {
                             file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG'),
                         ]) {
                             sh """
-                                cp ${configmapEnvExample} ${configmapEnvFile}
+                                mv ${configmapEnvExample} ${configmapEnvFile}
 
-                                sed -i 's|{DB_HOST}|\${OCPP_DB_HOST}|g' ${configmapEnvFile}
-                                sed -i 's|{DB_PORT}|\${OCPP_DB_PORT}|g' ${configmapEnvFile}
-                                sed -i 's|{DB_USERNAME}|\${OCPP_DB_USER}|g' ${configmapEnvFile}
-                                sed -i 's|{DB_PASSWORD}|\${OCPP_DB_PASS}|g' ${configmapEnvFile}
+                                sed -i 's|{DB_HOST}|${OCPP_DB_HOST}|g' ${configmapEnvFile}
+                                sed -i 's|{DB_PORT}|${OCPP_DB_PORT}|g' ${configmapEnvFile}
+                                sed -i 's|{DB_USERNAME}|${OCPP_DB_USER}|g' ${configmapEnvFile}
+                                sed -i 's|{DB_PASSWORD}|${OCPP_DB_PASS}|g' ${configmapEnvFile}
                                 sed -i 's|{DB_DATABASE}|${env.OCPP_DB_SCHEMA}|g' ${configmapEnvFile}
                                 sed -i 's|{ADMIN_USERNAME}|${env.AUTH_USER}|g' ${configmapEnvFile}
                                 sed -i 's|{ADMIN_PASSWORD}|${env.AUTH_PASSWORD}|g' ${configmapEnvFile}
                                 sed -i 's|{WEBAPI_KEY}|${env.WEB_API_KEY}|g' ${configmapEnvFile}
                                 sed -i 's|{WEBAPI_VALUE}|${env.WEB_API_VALUE}|g' ${configmapEnvFile}
-                                sed -i 's|{NATS_USERNAME}|\${NATS_USERNAME}|g' ${configmapEnvFile}
-                                sed -i 's|{NATS_PASSWORD}|\${NATS_PASSWORD}|g' ${configmapEnvFile}
+                                sed -i 's|{NATS_USERNAME}|${NATS_USERNAME}|g' ${configmapEnvFile}
+                                sed -i 's|{NATS_PASSWORD}|${NATS_PASSWORD}|g' ${configmapEnvFile}
 
-                                export KUBECONFIG=\${KUBECONFIG}
+                                export KUBECONFIG=${KUBECONFIG}
                                 helm upgrade --install ${env.SERVICE_NAME} ${env.HELM_FOLDER} \\
                                     --namespace ${env.K8S_NAMESPACE} \\
                                     -f ${env.HELM_FOLDER}/${env.HELM_VALUES_FILE} \\
