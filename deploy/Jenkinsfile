@@ -169,18 +169,18 @@ pipeline {
                         rm -f application-kubernetes.properties
                         cp ${env.ENV_FILE} application-kubernetes.properties
 
-                        sed -i 's|{OCPP_DB_HOST}|\${OCPP_DB_HOST}|g' application-kubernetes.properties
-                        sed -i 's|{OCPP_DB_PORT}|\${OCPP_DB_PORT}|g' application-kubernetes.properties
-                        sed -i 's|{OCPP_DB_USER}|\${OCPP_DB_USER}|g' application-kubernetes.properties
-                        sed -i 's|{OCPP_DB_PASS}|\${OCPP_DB_PASS}|g' application-kubernetes.properties
+                        sed -i 's|{OCPP_DB_HOST}|${OCPP_DB_HOST}|g' application-kubernetes.properties
+                        sed -i 's|{OCPP_DB_PORT}|${OCPP_DB_PORT}|g' application-kubernetes.properties
+                        sed -i 's|{OCPP_DB_USER}|${OCPP_DB_USER}|g' application-kubernetes.properties
+                        sed -i 's|{OCPP_DB_PASS}|${OCPP_DB_PASS}|g' application-kubernetes.properties
 
-                        sed -i 's|{AUTH_USER}|${env.AUTH_USER}|g' application-kubernetes.properties
-                        sed -i 's|{AUTH_PASSWORD}|${env.AUTH_PASSWORD}|g' application-kubernetes.properties
-                        sed -i 's|{WEB_API_KEY}|${env.WEB_API_KEY}|g' application-kubernetes.properties
-                        sed -i 's|{WEB_API_VALUE}|${env.WEB_API_VALUE}|g' application-kubernetes.properties
+                        sed -i 's|{AUTH_USER}|${AUTH_USER}|g' application-kubernetes.properties
+                        sed -i 's|{AUTH_PASSWORD}|${AUTH_PASSWORD}|g' application-kubernetes.properties
+                        sed -i 's|{WEB_API_KEY}|${WEB_API_KEY}|g' application-kubernetes.properties
+                        sed -i 's|{WEB_API_VALUE}|${WEB_API_VALUE}|g' application-kubernetes.properties
 
-                        sed -i 's|{NATS_USERNAME}|\${NATS_USERNAME}|g' application-kubernetes.properties
-                        sed -i 's|{NATS_PASSWORD}|\${NATS_PASSWORD}|g' application-kubernetes.properties
+                        sed -i 's|{NATS_USERNAME}|${NATS_USERNAME}|g' application-kubernetes.properties
+                        sed -i 's|{NATS_PASSWORD}|${NATS_PASSWORD}|g' application-kubernetes.properties   
                     """
                 }
                 withCredentials([file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG')]) {
