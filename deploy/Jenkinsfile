@@ -116,11 +116,11 @@ pipeline {
                         docker.withRegistry(env.REPOSITORY_URI) {
                             sh """
                                 docker build \\
-                                    --build-arg DB_HOST=\${OCPP_DB_HOST} \\
-                                    --build-arg DB_PORT=\${OCPP_DB_PORT} \\
-                                    --build-arg DB_USERNAME=\${OCPP_DB_USER} \\
-                                    --build-arg DB_PASSWORD=\${OCPP_DB_PASS} \\
-                                    --build-arg DB_DATABASE=\${OCPP_DB_SCHEMA} \\
+                                    --build-arg DB_HOST=${OCPP_DB_HOST} \\
+                                    --build-arg DB_PORT=${OCPP_DB_PORT} \\
+                                    --build-arg DB_USERNAME=${OCPP_DB_USER} \\
+                                    --build-arg DB_PASSWORD=${OCPP_DB_PASS} \\
+                                    --build-arg DB_DATABASE=${OCPP_DB_SCHEMA} \\
                                     --cache-from ${env.REGISTRY_IMAGE}:latest \\
                                     -f k8s/docker/Dockerfile \\
                                     -t ${env.REGISTRY_IMAGE}:${env.IMAGE_TAG} \\
