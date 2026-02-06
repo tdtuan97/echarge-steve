@@ -7,7 +7,7 @@ START TRANSACTION;
 -- add column without constraints
 
 ALTER TABLE `reservation`
-ADD COLUMN `connector_pk` INT(11) UNSIGNED AFTER `reservation_pk`;
+ADD COLUMN `connector_pk` BIGINT UNSIGNED AFTER `reservation_pk`;
 
 
 -- set connector_pk of existing reservations to connector 0 of the corresponding charge box.
@@ -23,7 +23,7 @@ SET `connector_pk` = (
 -- now that all connector_pk columns have values set, add constraints
 
 ALTER TABLE `reservation`
-  MODIFY COLUMN `connector_pk` INT(11) UNSIGNED NOT NULL AFTER `reservation_pk`,
+  MODIFY COLUMN `connector_pk` BIGINT UNSIGNED NOT NULL AFTER `reservation_pk`,
   ADD INDEX `FK_connector_pk_reserv_idx` (`connector_pk` ASC);
 
 ALTER TABLE `reservation`

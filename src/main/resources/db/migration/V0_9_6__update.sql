@@ -26,7 +26,7 @@ CREATE TABLE charging_schedule_period (
 );
 
 CREATE TABLE connector_charging_profile (
-  connector_pk INT(11) UNSIGNED NOT NULL,
+  connector_pk BIGINT UNSIGNED NOT NULL,
   charging_profile_pk INT NOT NULL
 );
 

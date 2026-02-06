@@ -112,7 +112,7 @@ CREATE TABLE `charging_schedule_period` (
 
 DROP TABLE IF EXISTS `connector`;
 CREATE TABLE `connector` (
-  `connector_pk` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `connector_pk` bigint unsigned NOT NULL AUTO_INCREMENT,
   `charge_box_id` varchar(255) NOT NULL,
   `connector_id` int(11) NOT NULL,
   PRIMARY KEY (`connector_pk`),
@@ -127,7 +127,7 @@ CREATE TABLE `connector` (
 
 DROP TABLE IF EXISTS `connector_charging_profile`;
 CREATE TABLE `connector_charging_profile` (
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `charging_profile_pk` int(11) NOT NULL,
   UNIQUE KEY `UQ_connector_charging_profile` (`connector_pk`,`charging_profile_pk`),
   KEY `FK_connector_charging_profile_charging_profile_pk` (`charging_profile_pk`),
@@ -141,7 +141,7 @@ CREATE TABLE `connector_charging_profile` (
 
 DROP TABLE IF EXISTS `connector_meter_value`;
 CREATE TABLE `connector_meter_value` (
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `transaction_pk` int(10) unsigned DEFAULT NULL,
   `value_timestamp` timestamp(6) NULL DEFAULT NULL,
   `value` text DEFAULT NULL,
@@ -164,7 +164,7 @@ CREATE TABLE `connector_meter_value` (
 
 DROP TABLE IF EXISTS `connector_status`;
 CREATE TABLE `connector_status` (
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `status_timestamp` timestamp(6) NULL DEFAULT NULL,
   `status` varchar(255) DEFAULT NULL,
   `error_code` varchar(255) DEFAULT NULL,
@@ -202,7 +202,7 @@ CREATE TABLE `ocpp_tag` (
 DROP TABLE IF EXISTS `reservation`;
 CREATE TABLE `reservation` (
   `reservation_pk` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `transaction_pk` int(10) unsigned DEFAULT NULL,
   `id_tag` varchar(255) NOT NULL,
   `start_datetime` datetime DEFAULT NULL,
@@ -273,7 +273,7 @@ DROP TABLE IF EXISTS `transaction_start`;
 CREATE TABLE `transaction_start` (
   `transaction_pk` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `event_timestamp` timestamp(6) NOT NULL DEFAULT current_timestamp(6),
-  `connector_pk` int(11) unsigned NOT NULL,
+  `connector_pk` bigint unsigned NOT NULL,
   `id_tag` varchar(255) NOT NULL,
   `start_timestamp` timestamp(6) NULL DEFAULT NULL,
   `start_value` varchar(255) DEFAULT NULL,
