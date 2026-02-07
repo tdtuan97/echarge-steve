@@ -207,7 +207,7 @@ public class CentralSystemService16_Service {
                                        .connectorId(parameters.getConnectorId())
                                        .idTag(parameters.getIdTag())
                                        .startTimestamp(parameters.getTimestamp())
-                                       .startMeterValue(Integer.toString(parameters.getMeterStart()))
+                                       .startMeterValue(Long.toString(parameters.getMeterStart()))
                                        .reservationId(parameters.getReservationId())
                                        .eventTimestamp(DateTime.now())
                                        .build();
@@ -239,7 +239,7 @@ public class CentralSystemService16_Service {
                                        .chargeBoxId(chargeBoxIdentity)
                                        .transactionId(transactionId)
                                        .stopTimestamp(parameters.getTimestamp())
-                                       .stopMeterValue(Integer.toString(parameters.getMeterStop()))
+                                       .stopMeterValue(Long.toString(parameters.getMeterStop()))
                                        .stopReason(stopReason)
                                        .eventTimestamp(DateTime.now())
                                        .eventActor(TransactionStopEventActor.station)

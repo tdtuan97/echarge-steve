@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2024 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -93,7 +93,7 @@ public enum Server12to15Impl implements Server12to15 {
                 request.getValues()
                        .stream()
                        .map(e -> new MeterValue().withTimestamp(e.getTimestamp())
-                                                 .withValue(new MeterValue.Value().withValue(Integer.toString(e.getValue()))))
+                                                 .withValue(new MeterValue.Value().withValue(Long.toString(e.getValue()))))
                        .collect(Collectors.toList());
 
         return new MeterValuesRequest()

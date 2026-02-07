@@ -518,7 +518,7 @@ public class OperationalSoapOCPP16Test {
         {
             TransactionRecord t = allTransactions.get(0);
             Assertions.assertEquals(startTimeStamp, t.getStartTimestamp());
-            Assertions.assertEquals(0, Integer.parseInt(t.getStartValue()));
+            Assertions.assertEquals(0L, Long.parseLong(t.getStartValue()));
 
             Assertions.assertNull(t.getStopTimestamp());
             Assertions.assertNull(t.getStopReason());
@@ -569,7 +569,7 @@ public class OperationalSoapOCPP16Test {
             Assertions.assertEquals(1, transactionsStop.size());
             TransactionRecord t = transactionsStop.get(0);
             Assertions.assertEquals(stopTimeStamp, t.getStopTimestamp());
-            Assertions.assertEquals(stopValue, Integer.parseInt(t.getStopValue()));
+            Assertions.assertEquals(stopValue, Long.parseLong(t.getStopValue()));
 
             if (transactionData != null) {
                 checkMeterValues(transactionData, transactionID);

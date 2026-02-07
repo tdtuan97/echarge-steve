@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Wed Jan 21 09:34:40 ICT 2026
+ocpp-jaxb-0.0.8.jar>=
+ocpp-jaxb-0.0.8-sources.jar>=
+ocpp-jaxb-0.0.8.pom>=

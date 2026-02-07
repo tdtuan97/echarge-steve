@@ -35,8 +35,8 @@ public class TransactionStopServiceHelper {
         }
 
         try {
-            Integer meterValueStop = Integer.valueOf(t.getStopValue());
-            Integer meterValueStart = Integer.valueOf(t.getStartValue());
+            Long meterValueStop = Long.valueOf(t.getStopValue());
+            Long meterValueStart = Long.valueOf(t.getStartValue());
             return (meterValueStop - meterValueStart) / 1000.0; // --> kWh
         } catch (Exception e) {
             log.error("Failed to calculate charged energy", e);
@@ -45,8 +45,8 @@ public class TransactionStopServiceHelper {
     }
 
     public static String floatingStringToIntString(String s) {
-        // meter values can be floating, whereas start/end values are int
-        return Integer.toString((int) Math.ceil(Double.parseDouble(s)));
+        // meter values can be floating, whereas start/end values are stored as long-capable string
+        return Long.toString((long) Math.ceil(Double.parseDouble(s)));
     }
 
     public static String kWhStringToWhString(String s) {

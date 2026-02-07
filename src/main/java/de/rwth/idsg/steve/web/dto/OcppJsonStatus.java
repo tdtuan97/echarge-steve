@@ -24,17 +24,31 @@ import lombok.Getter;
 import lombok.ToString;
 import org.joda.time.DateTime;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
- * @author Sevket Goekay <sevketgokay@gmail.com>
- * @since 25.03.2015
+ * OCPP JSON (WebSocket) connection status with tenant and metadata from handshake headers.
+ * Clone of ocpp-steve OcppJsonStatus with tenantType, tenantCode and metadata added.
  */
 @Getter
 @Builder
 @ToString
 public final class OcppJsonStatus {
-    private final Integer chargeBoxPk;
-    private final String chargeBoxId, connectedSince;
+    private final int chargeBoxPk;
+    private final String chargeBoxId;
+    private final String connectedSince;
     private final String connectionDuration;
     private final OcppVersion version;
     private final DateTime connectedSinceDT;
+    /** Tenant type from WebSocket handshake headers (e.g. X-Tenant-Type). Default "internal" when absent. */
+    @Builder.Default private final String tenantType = "internal";
+    /** Tenant code from WebSocket handshake headers (e.g. X-Tenant-Code). Default "default" when absent. */
+    @Builder.Default private final String tenantCode = "default";
+    /** Customer code from WebSocket handshake headers (e.g. X-Customer-Code). Null when absent. */
+    private final String customerCode;
+    /** Customer id from WebSocket handshake headers (e.g. X-Customer-Id). Null when absent. */
+    private final Long customerId;
+    /** Session metadata: ip, session_id, forward (path, protocol, port, host). */
+    @Builder.Default private final Map<String, Object> metadata = Collections.emptyMap();
 }

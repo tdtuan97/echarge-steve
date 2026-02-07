@@ -156,7 +156,7 @@ public class TransactionService {
         if (nextTx != null) {
             // some charging stations do not reset the meter value counter after each transaction and
             // continue counting. in such cases, use the value of subsequent transaction's start value
-            if (Integer.parseInt(nextTx.getStartValue()) > Integer.parseInt(thisTx.getStartValue())) {
+            if (Long.parseLong(nextTx.getStartValue()) > Long.parseLong(thisTx.getStartValue())) {
                 return TerminationValues.builder()
                                         .stopValue(nextTx.getStartValue())
                                         .stopTimestamp(nextTx.getStartTimestamp())

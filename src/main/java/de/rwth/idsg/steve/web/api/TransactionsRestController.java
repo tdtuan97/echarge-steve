@@ -36,6 +36,18 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
+import de.rwth.idsg.steve.web.dto.TransactionRemoteStartForm;
+import de.rwth.idsg.steve.web.dto.TransactionRemoteStopForm;
+import jakarta.validation.Valid;
+import org.jooq.tools.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import de.rwth.idsg.steve.service.ChargePointServiceClient;
+import de.rwth.idsg.steve.ocpp.OcppProtocol;
+import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
 
 import jakarta.validation.Valid;
 
@@ -58,6 +70,7 @@ import java.util.List;
 public class TransactionsRestController {
 
     private final TransactionService transactionService;
+    private final ChargePointServiceClient chargePointServiceClient;
 
     @Operation(description = """
         Returns a list of transactions based on the query parameters.
@@ -80,5 +93,38 @@ public class TransactionsRestController {
         var response = transactionService.getTransactions(params);
         log.debug("Read response for query: {}", response);
         return response;
+    }
+
+    @PostMapping("remote-start")
+    @ResponseBody
+    public String remoteStartTransaction(@Valid TransactionRemoteStartForm.ForApi params) {
+        List<ChargePointSelect> chargePointSelectList = List.of(
+                new ChargePointSelect(OcppProtocol.V_16_JSON, params.getChargeBoxId(), params.getEndpointAddress()));
+        params.setChargePointSelectList(chargePointSelectList);
+        Integer taskId = chargePointServiceClient.remoteStartTransaction(params);
+        JSONObject json = new JSONObject();
+        json.put("task_id", taskId);
+        return json.toString();
+    }
+
+    @PostMapping("remote-stop")
+    @ResponseBody
+    public String remoteStopTransaction(@Valid @ModelAttribute("params") TransactionRemoteStopForm.ForApi params) {
+        List<ChargePointSelect> chargePointSelectList = List.of(
+                new ChargePointSelect(OcppProtocol.V_16_JSON, params.getChargeBoxId(), params.getEndpointAddress()));
+        params.setChargePointSelectList(chargePointSelectList);
+        Integer taskId = chargePointServiceClient.remoteStopTransaction(params);
+        JSONObject json = new JSONObject();
+        json.put("task_id", taskId);
+        return json.toString();
+    }
+
+    @PostMapping("force-stop/{transactionPk}")
+    @ResponseBody
+    public String forceStopTransaction(@PathVariable("transactionPk") Integer transactionPk) {
+        transactionService.stop(transactionPk);
+        JSONObject json = new JSONObject();
+        json.put("transaction_id", transactionPk);
+        return json.toString();
     }
 }
