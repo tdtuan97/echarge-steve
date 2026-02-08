@@ -445,9 +445,10 @@
             <version>2.0</version>
         </dependency>
         <dependency>
-            <groupId>com.github.steve-community</groupId>
+            <!-- <groupId>com.github.steve-community</groupId> -->
+            <groupId>com.github.tdtuan97</groupId>
             <artifactId>ocpp-jaxb</artifactId>
-            <version>0.0.13</version>
+            <version>0.0.13-evc</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
