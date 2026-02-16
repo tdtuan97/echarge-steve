@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        def INSTANCE_COUNT = 1
         def KUBECONFIG_CREDENTIAL_ID = 'dev-kubeconfig'
         def K8S_NAMESPACE = 'evc-dev'
         def PROJECT_NAME = "evc"
@@ -43,21 +44,21 @@ pipeline {
             }
             steps {
                 script {
-                    KUBECONFIG_CREDENTIAL_ID = 'evc-prod-kubeconfig'
-                    K8S_NAMESPACE = 'evc-prod'
-                    HELM_FOLDER = "./evc-helm/prod/evc-ocpp/evc-steve"
+                    env.KUBECONFIG_CREDENTIAL_ID = 'evc-prod-kubeconfig'
+                    env.K8S_NAMESPACE = 'evc-prod'
+                    env.HELM_FOLDER = './evc-helm/prod/evc-ocpp/evc-steve'
                     ENV_FILE = './src/main/resources/application-kubernetes.properties'
 
-                    DB_OCPP_HOST_ID = 'evc-prod-db-ocpp-host'
-                    DB_OCPP_ACCOUNT_ID = 'evc-prod-db-ocpp-account'
-                    OCPP_DB_SCHEMA = 'ocpp_stevedb'
+                    env.DB_OCPP_HOST_ID = 'evc-prod-db-ocpp-host'
+                    env.DB_OCPP_ACCOUNT_ID = 'evc-prod-db-ocpp-account'
+                    env.OCPP_DB_SCHEMA = 'ocpp_stevedb'
 
-                    NATS_ACCOUNT_ID = 'evc-prod-nats-account'
+                    env.NATS_ACCOUNT_ID = 'evc-prod-nats-account'
 
-                    AUTH_USER = 'evc'
-                    AUTH_PASSWORD = 'st3wEZS78izkyyBA'
-                    WEB_API_KEY = 'evc'
-                    WEB_API_VALUE = 'st3wEZS78izkyyBA'
+                    env.AUTH_USER = 'evc'
+                    env.AUTH_PASSWORD = 'st3wEZS78izkyyBA'
+                    env.WEB_API_KEY = 'evc'
+                    env.WEB_API_VALUE = 'st3wEZS78izkyyBA'
                 }
             }
         }
@@ -154,47 +155,53 @@ pipeline {
                         branch: 'main'
 
                     script {
-                        def configmapEnvFile = "${env.HELM_FOLDER}/templates/configmap-env.yaml"
-                        def configmapEnvExample = "${env.HELM_FOLDER}/configmap-env.yaml.example"
-                        withCredentials([
-                            usernamePassword(
-                                credentialsId: env.DB_OCPP_HOST_ID,
-                                usernameVariable: 'OCPP_DB_HOST',
-                                passwordVariable: 'OCPP_DB_PORT',
-                            ),
-                            usernamePassword(
-                                credentialsId: env.DB_OCPP_ACCOUNT_ID,
-                                usernameVariable: 'OCPP_DB_USER',
-                                passwordVariable: 'OCPP_DB_PASS',
-                            ),
-                            usernamePassword(
-                                credentialsId: env.NATS_ACCOUNT_ID,
-                                usernameVariable: 'NATS_USERNAME',
-                                passwordVariable: 'NATS_PASSWORD',
-                            ),
-                            file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG'),
-                        ]) {
-                            sh """
-                                mv ${configmapEnvExample} ${configmapEnvFile}
+                        for (int i = 0; i < INSTANCE_COUNT; i++) {
+                            def instanceName = "evc-steve-${i}"
+                            def helmFolder = "${env.HELM_FOLDER}-${i}"
+                            echo "Deploying instance ${i}: ${instanceName} from ${helmFolder}"
 
-                                sed -i 's|{DB_HOST}|${OCPP_DB_HOST}|g' ${configmapEnvFile}
-                                sed -i 's|{DB_PORT}|${OCPP_DB_PORT}|g' ${configmapEnvFile}
-                                sed -i 's|{DB_USERNAME}|${OCPP_DB_USER}|g' ${configmapEnvFile}
-                                sed -i 's|{DB_PASSWORD}|${OCPP_DB_PASS}|g' ${configmapEnvFile}
-                                sed -i 's|{DB_DATABASE}|${env.OCPP_DB_SCHEMA}|g' ${configmapEnvFile}
-                                sed -i 's|{ADMIN_USERNAME}|${env.AUTH_USER}|g' ${configmapEnvFile}
-                                sed -i 's|{ADMIN_PASSWORD}|${env.AUTH_PASSWORD}|g' ${configmapEnvFile}
-                                sed -i 's|{WEBAPI_KEY}|${env.WEB_API_KEY}|g' ${configmapEnvFile}
-                                sed -i 's|{WEBAPI_VALUE}|${env.WEB_API_VALUE}|g' ${configmapEnvFile}
-                                sed -i 's|{NATS_USERNAME}|${NATS_USERNAME}|g' ${configmapEnvFile}
-                                sed -i 's|{NATS_PASSWORD}|${NATS_PASSWORD}|g' ${configmapEnvFile}
+                            def configmapEnvFile = "${helmFolder}/templates/configmap-env.yaml"
+                            def configmapEnvExample = "${env.HELM_FOLDER}/configmap-env.yaml.example"
+                            withCredentials([
+                                usernamePassword(
+                                    credentialsId: env.DB_OCPP_HOST_ID,
+                                    usernameVariable: 'OCPP_DB_HOST',
+                                    passwordVariable: 'OCPP_DB_PORT',
+                                ),
+                                usernamePassword(
+                                    credentialsId: env.DB_OCPP_ACCOUNT_ID,
+                                    usernameVariable: 'OCPP_DB_USER',
+                                    passwordVariable: 'OCPP_DB_PASS',
+                                ),
+                                usernamePassword(
+                                    credentialsId: env.NATS_ACCOUNT_ID,
+                                    usernameVariable: 'NATS_USERNAME',
+                                    passwordVariable: 'NATS_PASSWORD',
+                                ),
+                                file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG'),
+                            ]) {
+                                sh """
+                                    cp ${configmapEnvExample} ${configmapEnvFile}
 
-                                export KUBECONFIG=${KUBECONFIG}
-                                helm upgrade --install ${env.SERVICE_NAME} ${env.HELM_FOLDER} \\
-                                    --namespace ${env.K8S_NAMESPACE} \\
-                                    -f ${env.HELM_FOLDER}/${env.HELM_VALUES_FILE} \\
-                                    --set image.tag=${env.IMAGE_TAG}
-                            """
+                                    sed -i 's|{DB_HOST}|${OCPP_DB_HOST}|g' ${configmapEnvFile}
+                                    sed -i 's|{DB_PORT}|${OCPP_DB_PORT}|g' ${configmapEnvFile}
+                                    sed -i 's|{DB_USERNAME}|${OCPP_DB_USER}|g' ${configmapEnvFile}
+                                    sed -i 's|{DB_PASSWORD}|${OCPP_DB_PASS}|g' ${configmapEnvFile}
+                                    sed -i 's|{DB_DATABASE}|${env.OCPP_DB_SCHEMA}|g' ${configmapEnvFile}
+                                    sed -i 's|{ADMIN_USERNAME}|${env.AUTH_USER}|g' ${configmapEnvFile}
+                                    sed -i 's|{ADMIN_PASSWORD}|${env.AUTH_PASSWORD}|g' ${configmapEnvFile}
+                                    sed -i 's|{WEBAPI_KEY}|${env.WEB_API_KEY}|g' ${configmapEnvFile}
+                                    sed -i 's|{WEBAPI_VALUE}|${env.WEB_API_VALUE}|g' ${configmapEnvFile}
+                                    sed -i 's|{NATS_USERNAME}|${NATS_USERNAME}|g' ${configmapEnvFile}
+                                    sed -i 's|{NATS_PASSWORD}|${NATS_PASSWORD}|g' ${configmapEnvFile}
+
+                                    export KUBECONFIG=${KUBECONFIG}
+                                    helm upgrade --install ${instanceName} ${helmFolder} \\
+                                        --namespace ${env.K8S_NAMESPACE} \\
+                                        -f ${helmFolder}/${env.HELM_VALUES_FILE} \\
+                                        --set image.tag=${env.IMAGE_TAG}
+                                """
+                            }
                         }
                     }
                 }
