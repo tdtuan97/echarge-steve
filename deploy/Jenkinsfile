@@ -155,7 +155,7 @@ pipeline {
 
                     script {
                         def configmapEnvFile = "${env.HELM_FOLDER}/templates/configmap-env.yaml"
-                        def configmapEnvExample = "${env.HELM_FOLDER}/templates/configmap-env.yaml.example"
+                        def configmapEnvExample = "${env.HELM_FOLDER}/configmap-env.yaml.example"
                         withCredentials([
                             usernamePassword(
                                 credentialsId: env.DB_OCPP_HOST_ID,
