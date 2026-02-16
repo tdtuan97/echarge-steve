@@ -73,6 +73,17 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
+import ocpp.cs._2015._10.MeterValue;
+import ocpp.cs._2015._10.SampledValue;
+import de.rwth.idsg.steve.service.messaging.ChargePointEventPublishParams;
+import de.rwth.idsg.steve.service.messaging.ChargePointEventType;
+import de.rwth.idsg.steve.service.messaging.ChargePointMessageService;
+import de.rwth.idsg.steve.web.dto.OcppJsonStatus;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -90,6 +101,7 @@ public class CentralSystemService16_Service {
     private final OcppTagService ocppTagService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ChargePointService chargePointService;
+    private final ChargePointMessageService chargePointMessageService;
     private final EventRepository eventRepository;
     private final CertificateSigningService certificateSigningService;
     private final TaskScheduler taskScheduler;
@@ -126,10 +138,13 @@ public class CentralSystemService16_Service {
             ocppServerRepository.updateChargebox(params);
         }
 
-        return new BootNotificationResponse()
+        BootNotificationResponse response = new BootNotificationResponse()
                 .withStatus(status.orElse(RegistrationStatus.REJECTED))
                 .withCurrentTime(now)
                 .withInterval(settingsRepository.getHeartbeatIntervalInSeconds());
+        Map<String, Object> bootedPayload = buildBootedPayload(parameters, response);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.BOOTED, bootedPayload));
+        return response;
     }
 
     public FirmwareStatusNotificationResponse firmwareStatusNotification(
@@ -167,7 +182,8 @@ public class CentralSystemService16_Service {
             applicationEventPublisher.publishEvent(new OcppStationStatusSuspendedEV(
                     chargeBoxIdentity, parameters.getConnectorId(), parameters.getTimestamp()));
         }
-
+        Map<String, Object> connectorPayload = buildConnectorStatusChangedPayload(parameters);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.CONNECTOR_STATUS_CHANGED, connectorPayload));
         return new StatusNotificationResponse();
     }
 
@@ -180,7 +196,8 @@ public class CentralSystemService16_Service {
                 parameters.getConnectorId(),
                 transactionId
         );
-
+        Map<String, Object> meterPayload = buildMeterUpdatedPayload(parameters, transactionId);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.METER_UPDATED, meterPayload));
         return new MeterValuesResponse();
     }
 
@@ -200,6 +217,10 @@ public class CentralSystemService16_Service {
                 parameters.getConnectorId(),
                 () -> new IdTagInfo().withStatus(AuthorizationStatus.INVALID) // IdTagInfo is required
         );
+        if (parameters.getIdTag() == null || parameters.getIdTag().isEmpty()) {
+            return new StartTransactionResponse()
+                    .withIdTagInfo(info.withStatus(AuthorizationStatus.INVALID));
+        }
 
         InsertTransactionParams params =
                 InsertTransactionParams.builder()
@@ -215,10 +236,12 @@ public class CentralSystemService16_Service {
         int transactionId = ocppServerRepository.insertTransaction(params);
 
         applicationEventPublisher.publishEvent(new OcppTransactionStarted(transactionId, params));
-
-        return new StartTransactionResponse()
+        StartTransactionResponse response = new StartTransactionResponse()
                 .withIdTagInfo(info)
                 .withTransactionId(transactionId);
+        Map<String, Object> txStartedPayload = buildTransactionStartedPayload(parameters, transactionId, info);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.TRANSACTION_STARTED, txStartedPayload));
+        return response;
     }
 
     public StopTransactionResponse stopTransaction(StopTransactionRequest parameters, String chargeBoxIdentity) {
@@ -250,15 +273,19 @@ public class CentralSystemService16_Service {
         ocppServerRepository.insertMeterValues(chargeBoxIdentity, parameters.getTransactionData(), transactionId);
 
         applicationEventPublisher.publishEvent(new OcppTransactionEnded(params));
-
-        return new StopTransactionResponse().withIdTagInfo(idTagInfo);
+        StopTransactionResponse response = new StopTransactionResponse().withIdTagInfo(idTagInfo);
+        Map<String, Object> txStoppedPayload = buildTransactionStoppedPayload(parameters, idTagInfo);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.TRANSACTION_STOPPED, txStoppedPayload));
+        return response;
     }
 
     public HeartbeatResponse heartbeat(HeartbeatRequest parameters, String chargeBoxIdentity) {
         DateTime now = DateTime.now();
         ocppServerRepository.updateChargeboxHeartbeat(chargeBoxIdentity, now);
-
-        return new HeartbeatResponse().withCurrentTime(now);
+        HeartbeatResponse response = new HeartbeatResponse().withCurrentTime(now);
+        Map<String, Object> heartbeatPayload = buildHeartbeatPayload(response);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.HEARTBEAT, heartbeatPayload));
+        return response;
     }
 
     public AuthorizeResponse authorize(AuthorizeRequest parameters, String chargeBoxIdentity) {
@@ -270,7 +297,8 @@ public class CentralSystemService16_Service {
                 null,
                 () -> new IdTagInfo().withStatus(AuthorizationStatus.INVALID)
         );
-
+        Map<String, Object> authorizePayload = buildAuthorizePayload(parameters, idTagInfo);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.AUTHORIZE, authorizePayload));
         return new AuthorizeResponse().withIdTagInfo(idTagInfo);
     }
 
@@ -285,10 +313,10 @@ public class CentralSystemService16_Service {
         if (parameters.isSetData()) {
             log.info("[Data Transfer] Data: {}", parameters.getData());
         }
-
-        // OCPP requires a status to be set. Since this is a dummy impl, set it to "Accepted".
-        // https://github.com/steve-community/steve/pull/36
-        return new DataTransferResponse().withStatus(DataTransferStatus.ACCEPTED);
+        DataTransferResponse response = new DataTransferResponse().withStatus(DataTransferStatus.ACCEPTED);
+        Map<String, Object> dataTransferPayload = buildDataTransferPayload(parameters, response);
+        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.DATA_TRANSFER, dataTransferPayload));
+        return response;
     }
 
     // -------------------------------------------------------------------------
@@ -384,12 +412,181 @@ public class CentralSystemService16_Service {
      */
     private Integer getTransactionId(MeterValuesRequest parameters) {
         Integer transactionId = parameters.getTransactionId();
-        if (transactionId == null) {
-            return null;
-        } else if (transactionId < 1) {
-            log.warn("MeterValues transactionId is invalid ({}), ignoring it", transactionId);
+        if (transactionId == null || transactionId == 0) {
             return null;
         }
         return transactionId;
+    }
+
+    private Map<String, Object> buildBootedPayload(BootNotificationRequest parameters, BootNotificationResponse response) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("chargePointModel", parameters.getChargePointModel());
+        payload.put("chargePointVendor", parameters.getChargePointVendor());
+        payload.put("registrationStatus", response.getStatus() != null ? response.getStatus().value() : null);
+        payload.put("currentTime", response.getCurrentTime() != null ? response.getCurrentTime().toString() : null);
+        payload.put("interval", response.getInterval());
+        return payload;
+    }
+
+    private Map<String, Object> buildConnectorStatusChangedPayload(StatusNotificationRequest parameters) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("connectorId", parameters.getConnectorId());
+        payload.put("status", parameters.getStatus() != null ? parameters.getStatus().value() : null);
+        payload.put("errorCode", parameters.getErrorCode() != null ? parameters.getErrorCode().value() : null);
+        payload.put("info", parameters.getInfo());
+        payload.put("vendorId", parameters.getVendorId());
+        payload.put("vendorErrorCode", parameters.getVendorErrorCode());
+        if (parameters.isSetTimestamp()) {
+            payload.put("timestamp", parameters.getTimestamp() != null ? parameters.getTimestamp().toString() : null);
+        }
+        return payload;
+    }
+
+    private Map<String, Object> buildTransactionStartedPayload(StartTransactionRequest parameters,
+                                                                 int transactionId, IdTagInfo idTagInfo) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("transactionId", transactionId);
+        payload.put("connectorId", parameters.getConnectorId());
+        payload.put("idTag", parameters.getIdTag());
+        payload.put("meterStart", parameters.getMeterStart());
+        payload.put("timestamp", parameters.getTimestamp() != null ? parameters.getTimestamp().toString() : null);
+        payload.put("idTagInfo", convertIdTagInfo(idTagInfo));
+        return payload;
+    }
+
+    private Map<String, Object> buildTransactionStoppedPayload(StopTransactionRequest parameters, IdTagInfo idTagInfo) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("transactionId", parameters.getTransactionId());
+        payload.put("reason", parameters.isSetReason() && parameters.getReason() != null ? parameters.getReason().value() : null);
+        payload.put("meterStop", parameters.getMeterStop());
+        payload.put("timestamp", parameters.getTimestamp() != null ? parameters.getTimestamp().toString() : null);
+        payload.put("idTagInfo", convertIdTagInfo(idTagInfo));
+        return payload;
+    }
+
+    private Map<String, Object> buildMeterUpdatedPayload(MeterValuesRequest parameters, Integer transactionId) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("transactionId", transactionId);
+        payload.put("connectorId", parameters.getConnectorId());
+        payload.put("meterValue", convertMeterValues(parameters.getMeterValue()));
+        return payload;
+    }
+
+    private List<Map<String, Object>> convertMeterValues(List<MeterValue> meterValues) {
+        if (meterValues == null) {
+            return null;
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (MeterValue meterValue : meterValues) {
+            Map<String, Object> mvMap = new HashMap<>();
+            if (meterValue.isSetTimestamp()) {
+                mvMap.put("timestamp", meterValue.getTimestamp().toString());
+            }
+            if (meterValue.isSetSampledValue()) {
+                List<Map<String, Object>> sampledValues = new ArrayList<>();
+                for (SampledValue sv : meterValue.getSampledValue()) {
+                    Map<String, Object> svMap = new HashMap<>();
+                    if (sv.isSetValue()) {
+                        svMap.put("value", sv.getValue());
+                    }
+                    if (sv.isSetContext()) {
+                        svMap.put("context", sv.getContext().value());
+                    }
+                    if (sv.isSetFormat()) {
+                        svMap.put("format", sv.getFormat().value());
+                    }
+                    if (sv.isSetMeasurand()) {
+                        svMap.put("measurand", sv.getMeasurand().value());
+                    }
+                    if (sv.isSetPhase()) {
+                        svMap.put("phase", sv.getPhase().value());
+                    }
+                    if (sv.isSetLocation()) {
+                        svMap.put("location", sv.getLocation().value());
+                    }
+                    if (sv.isSetUnit()) {
+                        svMap.put("unit", sv.getUnit().value());
+                    }
+                    sampledValues.add(svMap);
+                }
+                mvMap.put("sampledValue", sampledValues);
+            }
+            result.add(mvMap);
+        }
+        return result;
+    }
+
+    private Map<String, Object> buildAuthorizePayload(AuthorizeRequest parameters, IdTagInfo idTagInfo) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("idTag", parameters.getIdTag());
+        payload.put("idTagInfo", convertIdTagInfo(idTagInfo));
+        return payload;
+    }
+
+    private Map<String, Object> convertIdTagInfo(IdTagInfo idTagInfo) {
+        if (idTagInfo == null) {
+            return null;
+        }
+        Map<String, Object> result = new HashMap<>();
+        if (idTagInfo.isSetStatus()) {
+            result.put("status", idTagInfo.getStatus().value());
+        }
+        if (idTagInfo.isSetExpiryDate()) {
+            result.put("expiryDate", idTagInfo.getExpiryDate().toString());
+        }
+        if (idTagInfo.isSetParentIdTag()) {
+            result.put("parentIdTag", idTagInfo.getParentIdTag());
+        }
+        return result;
+    }
+
+    private Map<String, Object> buildDataTransferPayload(DataTransferRequest parameters, DataTransferResponse response) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("vendorId", parameters.getVendorId());
+        if (parameters.isSetMessageId()) {
+            payload.put("messageId", parameters.getMessageId());
+        }
+        if (parameters.isSetData()) {
+            payload.put("data", parameters.getData());
+        }
+        payload.put("status", response.getStatus() != null ? response.getStatus().value() : null);
+        if (response.isSetData()) {
+            payload.put("responseData", response.getData());
+        }
+        return payload;
+    }
+
+    private Map<String, Object> buildHeartbeatPayload(HeartbeatResponse response) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("currentTime", response.getCurrentTime() != null ? response.getCurrentTime().toString() : null);
+        return payload;
+    }
+
+    /**
+     * Builds publish params for charge point event (tenant and customer from
+     * connected session, event type, payload).
+     */
+    public ChargePointEventPublishParams buildPublishParams(String chargeBoxIdentity,
+            ChargePointEventType eventType,
+            Map<String, Object> payload) {
+        OcppJsonStatus ocppJsonStatus = chargePointService.getOcppJsonStatusByChargeBoxId(chargeBoxIdentity)
+                .orElse(null);
+        if (ocppJsonStatus == null) {
+            return null;
+        }
+        String customerCode = ocppJsonStatus.getCustomerCode();
+        Long customerId = ocppJsonStatus.getCustomerId();
+        String tenantType = ocppJsonStatus.getTenantType();
+        String tenantCode = ocppJsonStatus.getTenantCode();
+
+        return ChargePointEventPublishParams.builder()
+                .tenantType(tenantType)
+                .tenantCode(tenantCode)
+                .customerCode(customerCode)
+                .customerId(customerId)
+                .chargePointId(chargeBoxIdentity)
+                .event(eventType.getValue())
+                .payload(payload)
+                .build();
     }
 }

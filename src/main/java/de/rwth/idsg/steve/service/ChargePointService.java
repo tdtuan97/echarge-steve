@@ -313,6 +313,18 @@ public class ChargePointService {
         return returnList;
     }
 
+    /**
+     * Returns OcppJsonStatus for the given charge box if it has an active JSON connection.
+     */
+    public Optional<OcppJsonStatus> getOcppJsonStatusByChargeBoxId(String chargeBoxId) {
+        if (chargeBoxId == null || chargeBoxId.isEmpty()) {
+            return Optional.empty();
+        }
+        return getOcppJsonStatus().stream()
+                .filter(s -> chargeBoxId.equals(s.getChargeBoxId()))
+                .findFirst();
+    }
+
     public List<ChargePointSelect> getChargePoints(OcppVersion version) {
         return getChargePoints(version, Collections.singletonList(RegistrationStatus.ACCEPTED), Collections.emptyList());
     }
