@@ -41,6 +41,8 @@ import org.springframework.web.socket.SubProtocolCapable;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
+import de.rwth.idsg.steve.service.messaging.ChargePointEventType;
+import de.rwth.idsg.steve.service.messaging.ChargePointMessageService;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,6 +64,7 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
     private final FutureResponseContextStore futureResponseContextStore;
     private final IncomingPipeline pipeline;
     private final SessionContextStore sessionContextStore;
+    private final ChargePointMessageService chargePointMessageService;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final List<Consumer<String>> connectedCallbackList = new ArrayList<>();
@@ -72,12 +75,14 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
                                      FutureResponseContextStore futureResponseContextStore,
                                      ApplicationEventPublisher applicationEventPublisher,
                                      SessionContextStoreHolder sessionContextStoreHolder,
-                                     AbstractTypeStore typeStore) {
+                                     AbstractTypeStore typeStore,
+                                     ChargePointMessageService chargePointMessageService) {
         this.taskScheduler = taskScheduler;
         this.ocppServerRepository = ocppServerRepository;
         this.futureResponseContextStore = futureResponseContextStore;
         this.pipeline = new IncomingPipeline(new Deserializer(futureResponseContextStore, typeStore), this);
         this.sessionContextStore = sessionContextStoreHolder.getOrCreate(getVersion());
+        this.chargePointMessageService = chargePointMessageService;
 
         connectedCallbackList.add((chargeBoxId) -> applicationEventPublisher.publishEvent(new OcppStationWebSocketConnected(chargeBoxId, getVersion())));
         disconnectedCallbackList.add((chargeBoxId) -> applicationEventPublisher.publishEvent(new OcppStationWebSocketDisconnected(chargeBoxId, getVersion())));
@@ -159,6 +164,7 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
         // Send notification only for the change 0 -> 1.
         if (sizeAfterAdd == 1) {
             connectedCallbackList.forEach(consumer -> consumer.accept(chargeBoxId));
+            chargePointMessageService.publishSystemEvent(session, chargeBoxId, ChargePointEventType.CONNECTED.getValue());
         }
     }
 
@@ -176,12 +182,14 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
         // Send notification only for the change 1 -> 0.
         if (sizeAfterRemove == 0) {
             disconnectedCallbackList.forEach(consumer -> consumer.accept(chargeBoxId));
+            chargePointMessageService.publishSystemEvent(session, chargeBoxId, ChargePointEventType.DISCONNECTED.getValue());
         }
     }
 
     @Override
     public void onError(WebSocketSession session, Throwable throwable) throws Exception {
         WebSocketLogger.transportError(getChargeBoxId(session), session, throwable);
+        chargePointMessageService.publishSystemEvent(session, getChargeBoxId(session), ChargePointEventType.FAILED.getValue());
     }
 
     @Override
