@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        def BASE_CONFIGMAP_ENV_FILE = "./evc-helm/dev/evc-ocpp/configmap-env.yaml.example"
         def INSTANCE_COUNT = 1
         def KUBECONFIG_CREDENTIAL_ID = 'dev-kubeconfig'
         def K8S_NAMESPACE = 'evc-dev'
@@ -161,7 +162,7 @@ pipeline {
                             echo "Deploying instance ${i}: ${instanceName} from ${helmFolder}"
 
                             def configmapEnvFile = "${helmFolder}/templates/configmap-env.yaml"
-                            def configmapEnvExample = "${env.HELM_FOLDER}/configmap-env.yaml.example"
+                            def configmapEnvExample = "${BASE_CONFIGMAP_ENV_FILE}"
                             withCredentials([
                                 usernamePassword(
                                     credentialsId: env.DB_OCPP_HOST_ID,
