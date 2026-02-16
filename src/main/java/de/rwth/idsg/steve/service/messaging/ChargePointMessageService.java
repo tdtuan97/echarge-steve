@@ -7,6 +7,7 @@ import io.nats.client.JetStream;
 import io.nats.client.JetStreamApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -33,6 +34,8 @@ public class ChargePointMessageService {
     private final ObjectMapper objectMapper;
     private JetStream jetStream;
     private final NatsJetStreamService natsJetStreamService;
+    @Value("${server.name:}")
+    private String serverName;
 
     @Autowired
     public ChargePointMessageService(NatsJetStreamService natsJetStreamService) {
@@ -62,6 +65,7 @@ public class ChargePointMessageService {
         if (params == null) {
             return;
         }
+        log.info("🔍 ------------ Server name: {}", serverName);
         String tenantTypeValue = Objects.toString(params.getTenantType(), "").trim().isEmpty() ? DEFAULT_TENANT_TYPE
                 : params.getTenantType();
         String tenantCodeValue = Objects.toString(params.getTenantCode(), "").trim().isEmpty() ? DEFAULT_TENANT_CODE
@@ -82,6 +86,7 @@ public class ChargePointMessageService {
             messageMap.put("event", eventValue);
             messageMap.put("published_at", publishedAt.toString());
             messageMap.put("payload", params.getPayload());
+            messageMap.put("server_name", serverName);
             publishToJetStream(new ChargePointNatsTemplate(messageMap, tenantTypeValue, tenantCodeValue,
                     chargePointIdValue, eventValue));
         } catch (Exception e) {
@@ -127,6 +132,7 @@ public class ChargePointMessageService {
         messageMap.put("event_type", chargePointEvent);
         messageMap.put("event_data", null);
         messageMap.put("published_at", publishedAt);
+        messageMap.put("server_name", serverName);
 
         return messageMap;
     }
