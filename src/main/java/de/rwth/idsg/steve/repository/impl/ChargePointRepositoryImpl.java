@@ -360,10 +360,9 @@ public class ChargePointRepositoryImpl implements ChargePointRepository {
         ctx.transaction(configuration -> {
             DSLContext ctx = DSL.using(configuration);
             try {
-                throw new SteveException("Not allow deleted charge point. Please contact to the admin.");
-                //addressRepository.delete(ctx, selectAddressId(chargeBoxPk));
-                //deleteChargePointInternal(ctx, chargeBoxPk);
-
+                //throw new SteveException("Not allow deleted charge point. Please contact to the admin.");
+                addressRepository.delete(ctx, selectAddressId(chargeBoxPk));
+                deleteChargePointInternal(ctx, chargeBoxPk);
             } catch (DataAccessException e) {
                 throw new SteveException("Failed to delete the charge point", e);
             }
