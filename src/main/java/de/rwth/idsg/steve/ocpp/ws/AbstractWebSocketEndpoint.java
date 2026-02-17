@@ -27,6 +27,8 @@ import de.rwth.idsg.steve.ocpp.ws.pipeline.Deserializer;
 import de.rwth.idsg.steve.ocpp.ws.pipeline.IncomingPipeline;
 import de.rwth.idsg.steve.ocpp.ws.pipeline.OcppCallHandler;
 import de.rwth.idsg.steve.repository.OcppServerRepository;
+import de.rwth.idsg.steve.service.messaging.ChargePointEventType;
+import de.rwth.idsg.steve.service.messaging.ChargePointMessageService;
 import de.rwth.idsg.steve.service.notification.OcppStationWebSocketConnected;
 import de.rwth.idsg.steve.service.notification.OcppStationWebSocketDisconnected;
 import org.joda.time.DateTime;
@@ -62,6 +64,7 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
     private final FutureResponseContextStore futureResponseContextStore;
     private final IncomingPipeline pipeline;
     private final SessionContextStore sessionContextStore;
+    private final ChargePointMessageService chargePointMessageService;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final List<Consumer<String>> connectedCallbackList = new ArrayList<>();
@@ -72,12 +75,14 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
                                      FutureResponseContextStore futureResponseContextStore,
                                      ApplicationEventPublisher applicationEventPublisher,
                                      SessionContextStoreHolder sessionContextStoreHolder,
-                                     AbstractTypeStore typeStore) {
+                                     AbstractTypeStore typeStore,
+                                     ChargePointMessageService chargePointMessageService) {
         this.taskScheduler = taskScheduler;
         this.ocppServerRepository = ocppServerRepository;
         this.futureResponseContextStore = futureResponseContextStore;
         this.pipeline = new IncomingPipeline(new Deserializer(futureResponseContextStore, typeStore), this);
         this.sessionContextStore = sessionContextStoreHolder.getOrCreate(getVersion());
+        this.chargePointMessageService = chargePointMessageService;
 
         connectedCallbackList.add((chargeBoxId) -> applicationEventPublisher.publishEvent(new OcppStationWebSocketConnected(chargeBoxId, getVersion())));
         disconnectedCallbackList.add((chargeBoxId) -> applicationEventPublisher.publishEvent(new OcppStationWebSocketDisconnected(chargeBoxId, getVersion())));
@@ -143,6 +148,9 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
         WebSocketLogger.connected(chargeBoxId, session);
         ocppServerRepository.updateOcppProtocol(chargeBoxId, getVersion().toProtocol(OcppTransport.JSON));
 
+        // Publish connect event to NATS
+        chargePointMessageService.publishSystemEvent(session, chargeBoxId, ChargePointEventType.CONNECTED.getValue());
+
         // Just to keep the connection alive, such that the servers do not close
         // the connection because of a idle timeout, we ping-pong at fixed intervals.
         ScheduledFuture pingSchedule = taskScheduler.scheduleAtFixedRate(
@@ -168,6 +176,9 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
 
         WebSocketLogger.closed(chargeBoxId, session, closeStatus);
 
+        // Publish disconnect event to NATS
+        chargePointMessageService.publishSystemEvent(session, chargeBoxId, ChargePointEventType.DISCONNECTED.getValue());
+
         futureResponseContextStore.removeSession(session);
 
         int sizeAfterRemove = sessionContextStore.remove(chargeBoxId, session);
@@ -181,7 +192,11 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
 
     @Override
     public void onError(WebSocketSession session, Throwable throwable) throws Exception {
-        WebSocketLogger.transportError(getChargeBoxId(session), session, throwable);
+        String chargeBoxId = getChargeBoxId(session);
+        WebSocketLogger.transportError(chargeBoxId, session, throwable);
+
+        // Publish failed event to NATS
+        chargePointMessageService.publishSystemEvent(session, chargeBoxId, ChargePointEventType.FAILED.getValue());
     }
 
     @Override
