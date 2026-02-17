@@ -38,6 +38,7 @@ import de.rwth.idsg.steve.utils.DateTimeUtils;
 import de.rwth.idsg.steve.web.dto.ChargePointForm;
 import de.rwth.idsg.steve.web.dto.ChargePointQueryForm;
 import de.rwth.idsg.steve.web.dto.ConnectorStatusForm;
+import de.rwth.idsg.steve.service.messaging.WebSocketSessionMetadata;
 import de.rwth.idsg.steve.web.dto.OcppJsonStatus;
 import de.rwth.idsg.steve.web.dto.Statistics;
 import lombok.RequiredArgsConstructor;
@@ -393,6 +394,14 @@ public class ChargePointService {
                     log.warn("Could not find chargeBoxPk for chargeBoxId={}", chargeBoxId);
                 }
 
+                // Extract tenant and customer information from session headers
+                var sessionHeaders = WebSocketSessionMetadata.getSessionHeaders(ctx.getSession());
+                String tenantType = WebSocketSessionMetadata.getTenantType(sessionHeaders);
+                String tenantCode = WebSocketSessionMetadata.getTenantCode(sessionHeaders);
+                String customerCode = WebSocketSessionMetadata.getCustomerCode(sessionHeaders);
+                Long customerId = WebSocketSessionMetadata.getCustomerId(sessionHeaders);
+                var metadata = WebSocketSessionMetadata.buildMetadata(ctx.getSession().getId(), sessionHeaders);
+
                 OcppJsonStatus status = OcppJsonStatus.builder()
                     .chargeBoxPk(chargeBoxPk)
                     .chargeBoxId(chargeBoxId)
@@ -400,6 +409,11 @@ public class ChargePointService {
                     .connectedSince(DateTimeUtils.humanize(openSince))
                     .connectionDuration(DateTimeUtils.timeElapsed(openSince, now))
                     .version(version)
+                    .tenantType(tenantType)
+                    .tenantCode(tenantCode)
+                    .customerCode(customerCode)
+                    .customerId(customerId)
+                    .metadata(metadata)
                     .build();
 
                 returnList.add(status);

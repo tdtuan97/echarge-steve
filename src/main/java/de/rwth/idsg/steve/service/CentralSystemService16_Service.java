@@ -569,15 +569,19 @@ public class CentralSystemService16_Service {
     public ChargePointEventPublishParams buildPublishParams(String chargeBoxIdentity,
             ChargePointEventType eventType,
             Map<String, Object> payload) {
-        OcppJsonStatus ocppJsonStatus = chargePointService.getOcppJsonStatusByChargeBoxId(chargeBoxIdentity)
-                .orElse(null);
-        if (ocppJsonStatus == null) {
+        log.debug("🔍 buildPublishParams: chargeBoxIdentity={}, eventType={}", chargeBoxIdentity, eventType);
+        Optional<OcppJsonStatus> ocppJsonStatusOpt = chargePointService.getOcppJsonStatusByChargeBoxId(chargeBoxIdentity);
+        if (ocppJsonStatusOpt.isEmpty()) {
+            log.warn("⚠️ buildPublishParams: OcppJsonStatus not found for chargeBoxIdentity={}, eventType={}", chargeBoxIdentity, eventType);
             return null;
         }
+        OcppJsonStatus ocppJsonStatus = ocppJsonStatusOpt.get();
         String customerCode = ocppJsonStatus.getCustomerCode();
         Long customerId = ocppJsonStatus.getCustomerId();
         String tenantType = ocppJsonStatus.getTenantType();
         String tenantCode = ocppJsonStatus.getTenantCode();
+        log.debug("🔍 buildPublishParams: chargeBoxIdentity={}, tenantType={}, tenantCode={}, customerCode={}, customerId={}", 
+                chargeBoxIdentity, tenantType, tenantCode, customerCode, customerId);
 
         return ChargePointEventPublishParams.builder()
                 .tenantType(tenantType)
