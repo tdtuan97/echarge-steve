@@ -20,7 +20,9 @@ package de.rwth.idsg.steve.utils.mapper;
 
 import de.rwth.idsg.steve.ocpp.OcppSecurityProfile;
 import de.rwth.idsg.steve.repository.dto.ChargePoint;
+import de.rwth.idsg.steve.utils.DateTimeUtils;
 import de.rwth.idsg.steve.web.dto.ChargePointForm;
+import de.rwth.idsg.steve.web.dto.ApiChargePointResponse;
 import jooq.steve.db.tables.records.ChargeBoxRecord;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -51,6 +53,29 @@ public final class ChargePointDetailsMapper {
         form.setHasAuthPassword(!StringUtils.isEmpty(chargeBox.getAuthPassword()));
 
         return form;
+    }
+
+    /**
+     * Maps ChargePoint.Details to API response DTO with basic fields.
+     */
+    public static ApiChargePointResponse mapToApiResponse(ChargePoint.Details cp) {
+        ChargeBoxRecord chargeBox = cp.getChargeBox();
+        OcppSecurityProfile profile = OcppSecurityProfile.fromValue(chargeBox.getSecurityProfile());
+        String securityProfileValue = profile != null ? String.valueOf(profile.getValue()) : null;
+        return ApiChargePointResponse.builder()
+                .chargeBoxPk(chargeBox.getChargeBoxPk())
+                .chargeBoxId(chargeBox.getChargeBoxId())
+                .registrationStatus(chargeBox.getRegistrationStatus())
+                .insertConnectorStatusAfterTransactionMsg(chargeBox.getInsertConnectorStatusAfterTransactionMsg())
+                .address(AddressMapper.recordToDto(cp.getAddress()))
+                .description(chargeBox.getDescription())
+                .note(chargeBox.getNote())
+                .adminAddress(chargeBox.getAdminAddress())
+                .securityProfile(securityProfileValue)
+                .hasAuthPassword(!StringUtils.isEmpty(chargeBox.getAuthPassword()))
+                .ocppProtocol(chargeBox.getOcppProtocol())
+                .lastHeartbeatTimestamp(DateTimeUtils.humanize(chargeBox.getLastHeartbeatTimestamp()))
+                .build();
     }
 
 }

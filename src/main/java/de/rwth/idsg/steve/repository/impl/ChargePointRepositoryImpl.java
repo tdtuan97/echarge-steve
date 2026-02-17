@@ -177,6 +177,10 @@ public class ChargePointRepositoryImpl implements ChargePointRepository {
             selectQuery.addConditions(CHARGE_BOX.OCPP_PROTOCOL.like(form.getOcppVersion().getValue() + "_"));
         }
 
+        if (form.isSetChargeBoxPk()) {
+            selectQuery.addConditions(CHARGE_BOX.CHARGE_BOX_PK.eq(form.getChargeBoxPk()));
+        }
+
         if (form.isSetDescription()) {
             selectQuery.addConditions(includes(CHARGE_BOX.DESCRIPTION, form.getDescription()));
         }

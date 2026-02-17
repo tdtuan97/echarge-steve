@@ -28,7 +28,6 @@ import de.rwth.idsg.steve.ocpp.ws.AbstractWebSocketEndpoint;
 import de.rwth.idsg.steve.ocpp.ws.FutureResponseContextStore;
 import de.rwth.idsg.steve.ocpp.ws.SessionContextStoreHolder;
 import de.rwth.idsg.steve.repository.OcppServerRepository;
-import de.rwth.idsg.steve.service.messaging.ChargePointMessageService;
 import ocpp.cs._2010._08.AuthorizeRequest;
 import ocpp.cs._2010._08.BootNotificationRequest;
 import ocpp.cs._2010._08.DiagnosticsStatusNotificationRequest;
@@ -58,9 +57,8 @@ public class Ocpp12WebSocketEndpoint extends AbstractWebSocketEndpoint {
                                    FutureResponseContextStore futureResponseContextStore,
                                    ApplicationEventPublisher applicationEventPublisher,
                                    CentralSystemService12_SoapServer server,
-                                   SessionContextStoreHolder sessionContextStoreHolder,
-                                   ChargePointMessageService chargePointMessageService) {
-        super(taskScheduler, ocppServerRepository, futureResponseContextStore, applicationEventPublisher, sessionContextStoreHolder, Ocpp12TypeStore.INSTANCE, chargePointMessageService);
+                                   SessionContextStoreHolder sessionContextStoreHolder) {
+        super(taskScheduler, ocppServerRepository, futureResponseContextStore, applicationEventPublisher, sessionContextStoreHolder, Ocpp12TypeStore.INSTANCE);
         this.server = server;
     }
 

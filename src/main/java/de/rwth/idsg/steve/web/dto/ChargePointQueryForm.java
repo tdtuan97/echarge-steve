@@ -34,6 +34,7 @@ import lombok.ToString;
 @ToString
 public class ChargePointQueryForm {
 
+    private Integer chargeBoxPk;
     private String chargeBoxId;
     private String description;
     private String note;
@@ -53,6 +54,10 @@ public class ChargePointQueryForm {
 
     public boolean isSetDescription() {
         return description != null;
+    }
+
+    public boolean isSetChargeBoxPk() {
+        return chargeBoxPk != null;
     }
 
     public boolean isSetChargeBoxId() {
