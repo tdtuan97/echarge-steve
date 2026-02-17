@@ -6,6 +6,8 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.nats.client.JetStream;
 import io.nats.client.JetStreamApiException;
 import lombok.extern.slf4j.Slf4j;
+import de.rwth.idsg.steve.service.ChargePointService;
+import de.rwth.idsg.steve.web.dto.OcppJsonStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,12 +36,14 @@ public class ChargePointMessageService {
     private final ObjectMapper objectMapper;
     private JetStream jetStream;
     private final NatsJetStreamService natsJetStreamService;
+    private final ChargePointService chargePointService;
     @Value("${server.name:}")
     private String serverName;
 
     @Autowired
-    public ChargePointMessageService(NatsJetStreamService natsJetStreamService) {
+    public ChargePointMessageService(NatsJetStreamService natsJetStreamService, ChargePointService chargePointService) {
         this.natsJetStreamService = natsJetStreamService;
+        this.chargePointService = chargePointService;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JodaModule());
         this.objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
@@ -104,10 +108,12 @@ public class ChargePointMessageService {
         }
         try {
             Instant publishedAt = Instant.now();
-            Map<String, Object> chargePointMsg = buildChargePointMessage(session, chargePointId, chargePointEvent,
+            Map<String, Object> chargePointMsg = buildChargePointMessage(chargePointId, chargePointEvent,
                     publishedAt.toString());
-            String tenantType = Objects.toString(chargePointMsg.get(TENANT_TYPE_KEY), "");
-            String tenantCode = Objects.toString(chargePointMsg.get(TENANT_CODE_KEY), "");
+            String tenantType = Objects.toString(chargePointMsg.get(TENANT_TYPE_KEY), "").trim().isEmpty() 
+                    ? DEFAULT_TENANT_TYPE : (String) chargePointMsg.get(TENANT_TYPE_KEY);
+            String tenantCode = Objects.toString(chargePointMsg.get(TENANT_CODE_KEY), "").trim().isEmpty() 
+                    ? DEFAULT_TENANT_CODE : (String) chargePointMsg.get(TENANT_CODE_KEY);
             publishToJetStream(new ChargePointNatsTemplate(chargePointMsg, tenantType, tenantCode, chargePointId,
                     chargePointEvent));
         } catch (Exception e) {
@@ -115,14 +121,22 @@ public class ChargePointMessageService {
         }
     }
 
-    private Map<String, Object> buildChargePointMessage(WebSocketSession session, String chargePointId,
+    private Map<String, Object> buildChargePointMessage(String chargePointId,
             String chargePointEvent, String publishedAt) {
-        Map<String, String> sessionHeaders = WebSocketSessionMetadata.getSessionHeaders(session);
-        String tenantType = WebSocketSessionMetadata.getTenantType(sessionHeaders);
-        String tenantCode = WebSocketSessionMetadata.getTenantCode(sessionHeaders);
-        String customerCode = WebSocketSessionMetadata.getCustomerCode(sessionHeaders);
-        Long customerId = WebSocketSessionMetadata.getCustomerId(sessionHeaders);
-
+        OcppJsonStatus ocppJsonStatus = chargePointService.getOcppJsonStatusByChargeBoxId(chargePointId)
+                .orElse(null);
+        String tenantType = DEFAULT_TENANT_TYPE;
+        String tenantCode = DEFAULT_TENANT_CODE;
+        String customerCode = null;
+        Long customerId = null;
+        if (ocppJsonStatus != null) {
+            tenantType = Objects.toString(ocppJsonStatus.getTenantType(), "").trim().isEmpty() 
+                    ? DEFAULT_TENANT_TYPE : ocppJsonStatus.getTenantType();
+            tenantCode = Objects.toString(ocppJsonStatus.getTenantCode(), "").trim().isEmpty() 
+                    ? DEFAULT_TENANT_CODE : ocppJsonStatus.getTenantCode();
+            customerCode = ocppJsonStatus.getCustomerCode();
+            customerId = ocppJsonStatus.getCustomerId();
+        }
         Map<String, Object> messageMap = new HashMap<>();
         messageMap.put("tenant_type", tenantType);
         messageMap.put("tenant_code", tenantCode);
