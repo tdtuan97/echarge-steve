@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        BASE_CONFIGMAP_ENV_FILE = "./evc-helm/dev/evc-ocpp/configmap-env.yaml.example"
-        INSTANCE_COUNT = '1'
-        KUBECONFIG_CREDENTIAL_ID = 'dev-kubeconfig'
+        def BASE_CONFIGMAP_ENV_FILE = "./evc-helm/dev/evc-ocpp/configmap-env.yaml.example"
+        def INSTANCE_COUNT = '1'
+        def KUBECONFIG_CREDENTIAL_ID = 'dev-kubeconfig'
         def K8S_NAMESPACE = 'evc-dev'
         def PROJECT_NAME = "evc"
         def SERVICE_NAME = 'evc-steve'
@@ -156,9 +156,19 @@ pipeline {
                         branch: 'main'
 
                     script {
-                        String rawCount = env.INSTANCE_COUNT?.toString()?.trim()
-                        int instanceCount = (rawCount?.isNumber() ? rawCount.toInteger() : 1)
+                        int instanceCount = 1
+                        try {
+                            String rawCount = env.INSTANCE_COUNT?.toString()?.trim()
+                            if (rawCount) {
+                                instanceCount = rawCount.toInteger()
+                            }
+                        } catch (Exception ignore) {
+                            instanceCount = 1
+                        }
                         instanceCount = Math.max(1, Math.min(instanceCount, 16))
+                        echo "INSTANCE_COUNT (env): ${env.INSTANCE_COUNT}"
+                        echo "instanceCount (parsed): ${instanceCount}"
+                        echo "Deploying ${instanceCount} instance(s)"
                         for (int i = 0; i < instanceCount; i++) {
                             def instanceName = "evc-steve-${i}"
                             def helmFolder = "${env.HELM_FOLDER}-${i}"
