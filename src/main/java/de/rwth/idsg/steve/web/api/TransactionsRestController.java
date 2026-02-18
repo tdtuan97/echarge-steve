@@ -111,6 +111,8 @@ public class TransactionsRestController {
     }
 
     private static ApiTransactionDetailResponse toDetailResponse(Transaction tx) {
+        boolean isActive = (tx.getStopTimestamp() == null) || 
+                          (tx.getStopValue() == null || tx.getStopValue().isEmpty());
         return ApiTransactionDetailResponse.builder()
                 .transactionPk(tx.getId())
                 .chargeBoxId(tx.getChargeBoxId())
@@ -121,6 +123,7 @@ public class TransactionsRestController {
                 .startValue(tx.getStartValue())
                 .stopTimestamp(tx.getStopTimestamp())
                 .stopValue(tx.getStopValue())
+                .isActive(isActive)
                 .build();
     }
 

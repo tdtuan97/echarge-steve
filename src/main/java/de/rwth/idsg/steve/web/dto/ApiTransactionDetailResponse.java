@@ -69,4 +69,8 @@ public class ApiTransactionDetailResponse {
     @JsonProperty("stop_value")
     @Schema(description = "Stop Value", nullable = true)
     private final String stopValue;
+
+    @JsonProperty("is_active")
+    @Schema(description = "Whether the transaction is active (not stopped)")
+    private final Boolean isActive;
 }
