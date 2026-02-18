@@ -48,8 +48,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import de.rwth.idsg.steve.service.ChargePointServiceClient;
 import de.rwth.idsg.steve.ocpp.OcppProtocol;
 import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
-
-import jakarta.validation.Valid;
+import de.rwth.idsg.steve.web.dto.ApiTransactionDetailResponse;
 
 import java.util.List;
 
@@ -93,6 +92,36 @@ public class TransactionsRestController {
         var response = transactionService.getTransactions(params);
         log.debug("Read response for query: {}", response);
         return response;
+    }
+
+    @Operation(description = "Returns transaction detail by transaction PK. Same columns as UI: Transaction ID, ChargeBox ID, Connector ID, OCPP ID Tag, User ID, Start Date/Time, Start Value, Stop Date/Time, Stop Value.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "OK"),
+        @ApiResponse(responseCode = "404", description = "Not Found", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))}),
+        @ApiResponse(responseCode = "401", description = "Unauthorized", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))}),
+        @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))})}
+    )
+    @GetMapping(value = "/{transactionPk}")
+    public ApiTransactionDetailResponse getByTransactionPk(@PathVariable("transactionPk") Integer transactionPk) {
+        Transaction tx = transactionService.getTransaction(transactionPk);
+        if (tx == null) {
+            throw new SteveException.NotFound("Could not find transaction with transactionPk=" + transactionPk);
+        }
+        return toDetailResponse(tx);
+    }
+
+    private static ApiTransactionDetailResponse toDetailResponse(Transaction tx) {
+        return ApiTransactionDetailResponse.builder()
+                .transactionPk(tx.getId())
+                .chargeBoxId(tx.getChargeBoxId())
+                .connectorId(tx.getConnectorId())
+                .idTag(tx.getOcppIdTag())
+                .userId(tx.getUserId())
+                .startTimestamp(tx.getStartTimestamp())
+                .startValue(tx.getStartValue())
+                .stopTimestamp(tx.getStopTimestamp())
+                .stopValue(tx.getStopValue())
+                .build();
     }
 
     @PostMapping("remote-start")

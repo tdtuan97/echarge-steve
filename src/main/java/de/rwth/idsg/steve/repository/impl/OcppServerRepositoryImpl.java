@@ -380,14 +380,19 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
      * If the connector information was not received before, insert it. Otherwise, ignore.
      */
     public static void insertIgnoreConnector(DSLContext ctx, String chargeBoxIdentity, int connectorId) {
-        int count = ctx.insertInto(CONNECTOR,
+        boolean exists = ctx.fetchExists(
+                ctx.selectFrom(CONNECTOR)
+                        .where(CONNECTOR.CHARGE_BOX_ID.eq(chargeBoxIdentity))
+                        .and(CONNECTOR.CONNECTOR_ID.eq(connectorId)));
+        if (!exists) {
+            int count = ctx.insertInto(CONNECTOR,
                             CONNECTOR.CHARGE_BOX_ID, CONNECTOR.CONNECTOR_ID)
-                       .values(chargeBoxIdentity, connectorId)
-                       .onDuplicateKeyIgnore() // Important detail
-                       .execute();
+                           .values(chargeBoxIdentity, connectorId)
+                           .execute();
 
-        if (count == 1) {
-            log.info("The connector {}/{} is NEW, and inserted into DB.", chargeBoxIdentity, connectorId);
+            if (count == 1) {
+                log.info("The connector {}/{} is NEW, and inserted into DB.", chargeBoxIdentity, connectorId);
+            }
         }
     }
 
