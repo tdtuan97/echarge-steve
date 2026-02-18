@@ -42,9 +42,9 @@ import de.rwth.idsg.steve.web.dto.TransactionRemoteStopForm;
 import jakarta.validation.Valid;
 import org.jooq.tools.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import de.rwth.idsg.steve.service.ChargePointServiceClient;
 import de.rwth.idsg.steve.ocpp.OcppProtocol;
 import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
@@ -97,7 +97,7 @@ public class TransactionsRestController {
 
     @PostMapping("remote-start")
     @ResponseBody
-    public String remoteStartTransaction(@Valid TransactionRemoteStartForm.ForApi params) {
+    public String remoteStartTransaction(@RequestBody @Valid TransactionRemoteStartForm.ForApi params) {
         List<ChargePointSelect> chargePointSelectList = List.of(
                 new ChargePointSelect(OcppProtocol.V_16_JSON, params.getChargeBoxId(), params.getEndpointAddress()));
         params.setChargePointSelectList(chargePointSelectList);
@@ -109,7 +109,7 @@ public class TransactionsRestController {
 
     @PostMapping("remote-stop")
     @ResponseBody
-    public String remoteStopTransaction(@Valid @ModelAttribute("params") TransactionRemoteStopForm.ForApi params) {
+    public String remoteStopTransaction(@RequestBody @Valid TransactionRemoteStopForm.ForApi params) {
         List<ChargePointSelect> chargePointSelectList = List.of(
                 new ChargePointSelect(OcppProtocol.V_16_JSON, params.getChargeBoxId(), params.getEndpointAddress()));
         params.setChargePointSelectList(chargePointSelectList);
