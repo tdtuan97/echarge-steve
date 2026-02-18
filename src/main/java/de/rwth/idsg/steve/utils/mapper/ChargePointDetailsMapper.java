@@ -74,6 +74,8 @@ public final class ChargePointDetailsMapper {
                 .securityProfile(securityProfileValue)
                 .hasAuthPassword(!StringUtils.isEmpty(chargeBox.getAuthPassword()))
                 .ocppProtocol(chargeBox.getOcppProtocol())
+                .chargePointVendor(chargeBox.getChargePointVendor())
+                .chargePointModel(chargeBox.getChargePointModel())
                 .lastHeartbeatTimestamp(DateTimeUtils.humanize(chargeBox.getLastHeartbeatTimestamp()))
                 .build();
     }

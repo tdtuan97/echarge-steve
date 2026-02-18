@@ -71,4 +71,10 @@ public class ApiChargePointResponse {
 
     @Schema(description = "Last heartbeat timestamp (humanized)")
     private String lastHeartbeatTimestamp;
+
+    @Schema(description = "Charge point vendor")
+    private String chargePointVendor;
+
+    @Schema(description = "Charge point model")
+    private String chargePointModel;
 }
