@@ -137,6 +137,9 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
         String chargeBoxId = getChargeBoxId(session);
         WebSocketLogger.connected(chargeBoxId, session);
 
+        // Publish connect event to NATS
+        chargePointMessageService.publishSystemEvent(session, chargeBoxId, ChargePointEventType.CONNECTED.getValue());
+
         boolean stationConnected = sessionContextStore.add(chargeBoxId, session);
 
         ocppServerRepository.updateOcppProtocol(chargeBoxId, getVersion().toProtocol(OcppTransport.JSON));
@@ -152,6 +155,9 @@ public abstract class AbstractWebSocketEndpoint extends ConcurrentWebSocketHandl
     public void onClose(WebSocketSession session, CloseStatus closeStatus) throws Exception {
         String chargeBoxId = getChargeBoxId(session);
         WebSocketLogger.closed(chargeBoxId, session, closeStatus);
+
+        // Publish disconnect event to NATS
+        chargePointMessageService.publishSystemEvent(session, chargeBoxId, ChargePointEventType.DISCONNECTED.getValue());
 
         boolean stationDisconnected = sessionContextStore.remove(chargeBoxId, session);
 
