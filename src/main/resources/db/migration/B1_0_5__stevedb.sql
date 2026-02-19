@@ -154,7 +154,7 @@ CREATE TABLE `connector_meter_value` (
   KEY `FK_cm_pk_idx` (`connector_pk`),
   KEY `FK_tid_cm_idx` (`transaction_pk`),
   KEY `cmv_value_timestamp_idx` (`value_timestamp`),
-  CONSTRAINT `FK_pk_cm` FOREIGN KEY (`connector_pk`) REFERENCES `connector` (`connector_pk`) ON DELETE CASCADE ON UPDATE NO ACTION,
+  CONSTRAINT `FK_pk_cm` FOREIGN KEY (`connector_pk`) REFERENCES `connector` (`connector_pk`) ON DELETE RESTRICT ON UPDATE NO ACTION,
   CONSTRAINT `FK_tid_cm` FOREIGN KEY (`transaction_pk`) REFERENCES `transaction_start` (`transaction_pk`) ON DELETE SET NULL ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
@@ -282,7 +282,7 @@ CREATE TABLE `transaction_start` (
   KEY `idTag_idx` (`id_tag`),
   KEY `connector_pk_idx` (`connector_pk`),
   KEY `transaction_start_idx` (`start_timestamp`),
-  CONSTRAINT `FK_connector_pk_t` FOREIGN KEY (`connector_pk`) REFERENCES `connector` (`connector_pk`) ON DELETE CASCADE ON UPDATE NO ACTION,
+  CONSTRAINT `FK_connector_pk_t` FOREIGN KEY (`connector_pk`) REFERENCES `connector` (`connector_pk`) ON DELETE RESTRICT ON UPDATE NO ACTION,
   CONSTRAINT `FK_transaction_ocpp_tag_id_tag` FOREIGN KEY (`id_tag`) REFERENCES `ocpp_tag` (`id_tag`) ON DELETE CASCADE ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
