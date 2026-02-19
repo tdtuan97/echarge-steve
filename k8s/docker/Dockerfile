@@ -14,13 +14,6 @@ ARG DB_PORT
 # Build Stage
 FROM base as build
 
-# Convert ARG -> ENV
-ENV DB_HOST=${DB_HOST}
-ENV DB_USERNAME=${DB_USERNAME}
-ENV DB_PASSWORD=${DB_PASSWORD}
-ENV DB_DATABASE=${DB_DATABASE}
-ENV DB_PORT=${DB_PORT}
-
 # Set the working directory for the build stage
 WORKDIR /code
 
