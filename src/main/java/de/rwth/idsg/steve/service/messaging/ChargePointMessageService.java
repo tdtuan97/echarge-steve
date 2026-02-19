@@ -83,9 +83,9 @@ public class ChargePointMessageService {
             messageMap.put("customer_code", params.getCustomerCode());
             messageMap.put("customer_id", params.getCustomerId());
             messageMap.put("charge_point_id", chargePointIdValue);
-            messageMap.put("event", eventValue);
+            messageMap.put("event_type", eventValue);
+            messageMap.put("event_data", params.getPayload());
             messageMap.put("published_at", publishedAt.toString());
-            messageMap.put("payload", params.getPayload());
             messageMap.put("server_name", serverName);
             publishToJetStream(new ChargePointNatsTemplate(messageMap, tenantTypeValue, tenantCodeValue,
                     chargePointIdValue, eventValue));
