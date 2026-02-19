@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -37,12 +37,14 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.TreeNode;
+import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.NullNode;
 import tools.jackson.databind.node.ObjectNode;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.function.Consumer;
 
 /**
@@ -75,22 +77,10 @@ public class Deserializer implements Consumer<CommunicationContext> {
             parser.nextToken();
             String messageId = parser.getString();
 
-            MessageType messageType = MessageType.fromTypeNr(messageTypeNr);
-            switch (messageType) {
-                case CALL:
-                    handleCall(context, messageId, parser);
-                    break;
-
-                case CALL_RESULT:
-                    handleResult(context, messageId, parser);
-                    break;
-
-                case CALL_ERROR:
-                    handleError(context, messageId, parser);
-                    break;
-
-                default:
-                    throw new SteveException("Unknown enum type");
+            switch (MessageType.fromTypeNr(messageTypeNr)) {
+                case CALL -> handleCall(context, messageId, parser);
+                case CALL_RESULT -> handleResult(context, messageId, parser);
+                case CALL_ERROR -> handleError(context, messageId, parser);
             }
         } catch (Exception e) {
             throw new SteveException("Deserialization of incoming string failed: %s", context.getIncomingString(), e);
@@ -135,6 +125,14 @@ public class Deserializer implements Consumer<CommunicationContext> {
             }
 
             req = mapper.treeToValue(requestPayload, clazz);
+        } catch (ConstraintViolationException e) {
+            log.error("Exception occurred", e);
+            context.setOutgoingMessage(ErrorFactory.propertyConstraintViolation(messageId, e.getMessage()));
+            return;
+        } catch (DatabindException e) {
+            log.error("Exception occurred", e);
+            context.setOutgoingMessage(ErrorFactory.propertyConstraintViolation(messageId, e.getCause().getMessage()));
+            return;
         } catch (JacksonException e) {
             log.error("Exception occurred", e);
             context.setOutgoingMessage(ErrorFactory.payloadDeserializeError(messageId, e.getMessage()));
@@ -161,6 +159,7 @@ public class Deserializer implements Consumer<CommunicationContext> {
                     context.getIncomingString()
             );
         }
+        context.setFutureResponseContext(responseContext);
 
         ResponseType res;
         try {
@@ -176,7 +175,6 @@ public class Deserializer implements Consumer<CommunicationContext> {
         result.setPayload(res);
 
         context.setIncomingMessage(result);
-        context.createResultHandler(responseContext.getTask());
     }
 
     /**
@@ -191,6 +189,7 @@ public class Deserializer implements Consumer<CommunicationContext> {
                     context.getIncomingString()
             );
         }
+        context.setFutureResponseContext(responseContext);
 
         ErrorCode code;
         String desc;
@@ -228,7 +227,6 @@ public class Deserializer implements Consumer<CommunicationContext> {
         error.setErrorDetails(details);
 
         context.setIncomingMessage(error);
-        context.createErrorHandler(responseContext.getTask());
     }
 
 }

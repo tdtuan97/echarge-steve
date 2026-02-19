@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ import ocpp._2022._02.security.CertificateSignedResponse.CertificateSignedStatus
 import jakarta.xml.ws.AsyncHandler;
 
 @Slf4j
-public class CertificateSignedTask extends Ocpp16AndAboveTask<CertificateSignedParams, String> {
+public class CertificateSignedTask extends Ocpp16AndAboveTask<CertificateSignedParams, CertificateSignedStatusEnumType> {
 
     private final CertificateRepository certificateRepository;
 
@@ -41,8 +41,13 @@ public class CertificateSignedTask extends Ocpp16AndAboveTask<CertificateSignedP
     }
 
     @Override
-    public OcppCallback<String> defaultCallback() {
-        return new StringOcppCallback();
+    public OcppCallback<CertificateSignedStatusEnumType> defaultCallback() {
+        return new DefaultOcppCallback<CertificateSignedStatusEnumType>() {
+            @Override
+            public void success(String chargeBoxId, CertificateSignedStatusEnumType response) {
+                addNewResponse(chargeBoxId, response.value());
+            }
+        };
     }
 
     @Override
@@ -57,7 +62,6 @@ public class CertificateSignedTask extends Ocpp16AndAboveTask<CertificateSignedP
         return res -> {
             try {
                 var status = res.get().getStatus();
-                success(chargeBoxId, status.value());
 
                 switch (status) {
                     case ACCEPTED -> log.info("Request was {} by charge point '{}'", status, chargeBoxId);
@@ -67,6 +71,8 @@ public class CertificateSignedTask extends Ocpp16AndAboveTask<CertificateSignedP
 
                 boolean accepted = (status == CertificateSignedStatusEnumType.ACCEPTED);
                 certificateRepository.insertCertificateSignResponse(chargeBoxId, params.getCertificateId(), accepted);
+
+                success(chargeBoxId, status);
             } catch (Exception e) {
                 failed(chargeBoxId, e);
             }

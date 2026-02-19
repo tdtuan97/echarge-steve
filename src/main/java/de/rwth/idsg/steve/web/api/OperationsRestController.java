@@ -28,7 +28,6 @@ import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
 import de.rwth.idsg.steve.service.ChargePointServiceClient;
 import de.rwth.idsg.steve.service.messaging.RemoteTransactionEventPublisher;
 import de.rwth.idsg.steve.web.dto.ocpp.ResetParams;
-import de.rwth.idsg.steve.web.dto.ocpp.ResetType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.tools.json.JSONObject;
@@ -59,26 +58,26 @@ public class OperationsRestController {
     @Autowired
     private RemoteTransactionEventPublisher remoteTransactionEventPublisher;
 
-    @PostMapping(value = "reset")
-    @ResponseBody
-    public String reset(@RequestBody JSONObject params) {
-        if (params.get("resetType") == null) {
-            throw new SteveException("Reset type is required");
-        }
-        if (params.get("chargeBoxId") == null) {
-            throw new SteveException("Charge box ID is required");
-        }
-        ResetParams resetParams = new ResetParams();
-        resetParams.setResetType(ResetType.valueOf(params.get("resetType").toString()));
-        List<ChargePointSelect> chargePointSelectList = new ArrayList<>();
-        chargePointSelectList.add(new ChargePointSelect(OcppProtocol.V_16_JSON, params.get("chargeBoxId").toString()));
-        resetParams.setChargePointSelectList(chargePointSelectList);
-        Integer taskId = chargePointServiceClient.reset(resetParams);
-        JSONObject res = new JSONObject();
-        res.put("status", "success");
-        res.put("task_id", taskId);
-        return res.toString();
-    }
+    // @PostMapping(value = "reset")
+    // @ResponseBody
+    // public String reset(@RequestBody JSONObject params) {
+    //     if (params.get("resetType") == null) {
+    //         throw new SteveException("Reset type is required");
+    //     }
+    //     if (params.get("chargeBoxId") == null) {
+    //         throw new SteveException("Charge box ID is required");
+    //     }
+    //     ResetParams resetParams = new ResetParams();
+    //     resetParams.setResetType(ResetType.valueOf(params.get("resetType").toString()));
+    //     List<ChargePointSelect> chargePointSelectList = new ArrayList<>();
+    //     chargePointSelectList.add(new ChargePointSelect(OcppProtocol.V_16_JSON, params.get("chargeBoxId").toString()));
+    //     resetParams.setChargePointSelectList(chargePointSelectList);
+    //     Integer taskId = chargePointServiceClient.reset(resetParams);
+    //     JSONObject res = new JSONObject();
+    //     res.put("status", "success");
+    //     res.put("task_id", taskId);
+    //     return res.toString();
+    // }
 
     @GetMapping("task/{taskId}")
     @ResponseBody

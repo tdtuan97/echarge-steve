@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,6 @@ import de.rwth.idsg.steve.utils.DateTimeUtils;
 import de.rwth.idsg.steve.utils.TransactionStopServiceHelper;
 import de.rwth.idsg.steve.web.dto.QueryPeriodType;
 import de.rwth.idsg.steve.web.dto.TransactionQueryForm;
-import jakarta.annotation.Nullable;
 import jooq.steve.db.tables.records.ConnectorMeterValueRecord;
 import jooq.steve.db.tables.records.TransactionStartRecord;
 import lombok.RequiredArgsConstructor;
@@ -43,9 +42,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static de.rwth.idsg.steve.repository.impl.RepositoryUtils.ocppTagByUserIdQuery;
 import static de.rwth.idsg.steve.utils.CustomDSL.DATE_TIME_TYPE;
-import static de.rwth.idsg.steve.utils.CustomDSL.date;
 import static de.rwth.idsg.steve.utils.CustomDSL.getTimeCondition;
 import static jooq.steve.db.Tables.USER_OCPP_TAG;
 import static jooq.steve.db.tables.ChargeBox.CHARGE_BOX;
@@ -159,7 +156,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         // -------------------------------------------------------------------------
 
         TransactionQueryForm form = new TransactionQueryForm();
-        form.setTransactionPk(transactionPk);
+        form.setTransactionPk(List.of(transactionPk));
         form.setType(TransactionQueryForm.QueryType.ALL);
         form.setPeriodType(QueryPeriodType.ALL);
 
@@ -284,11 +281,11 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         List<Condition> conditions = new ArrayList<>();
 
         if (form.isTransactionPkSet()) {
-            conditions.add(TRANSACTION.TRANSACTION_PK.eq(form.getTransactionPk()));
+            conditions.add(TRANSACTION.TRANSACTION_PK.in(form.getTransactionPk()));
         }
 
         if (form.isChargeBoxIdSet()) {
-            conditions.add(CONNECTOR.CHARGE_BOX_ID.eq(form.getChargeBoxId()));
+            conditions.add(CONNECTOR.CHARGE_BOX_ID.in(form.getChargeBoxId()));
         }
 
         if (form.isConnectorIdSet()) {
@@ -296,11 +293,11 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         }
 
         if (form.isOcppIdTagSet()) {
-            conditions.add(TRANSACTION.ID_TAG.eq(form.getOcppIdTag()));
+            conditions.add(TRANSACTION.ID_TAG.in(form.getOcppIdTag()));
         }
 
         if (form.isUserIdSet()) {
-            conditions.add(USER_OCPP_TAG.USER_PK.eq(form.getUserId()));
+            conditions.add(USER_OCPP_TAG.USER_PK.in(form.getUserId()));
         }
 
         if (form.getType() == TransactionQueryForm.QueryType.ACTIVE) {

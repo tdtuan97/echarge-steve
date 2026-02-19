@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -268,6 +268,15 @@ public class ChargingProfileRepositoryImpl implements ChargingProfileRepository 
                    .fetch();
 
         return new ChargingProfile.Details(profile, periods);
+    }
+
+    @Override
+    public boolean exists(int chargingProfilePk) {
+        return ctx.selectOne()
+            .from(CHARGING_PROFILE)
+            .where(CHARGING_PROFILE.CHARGING_PROFILE_PK.eq(chargingProfilePk))
+            .fetchOptional()
+            .isPresent();
     }
 
     @Override

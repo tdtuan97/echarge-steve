@@ -1,6 +1,10 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
+<<<<<<< HEAD
  * Copyright (C) 2013-2024 SteVe Community Team
+=======
+ * Copyright (C) 2013-2026 SteVe Community Team
+>>>>>>> steve-3.11.0
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify

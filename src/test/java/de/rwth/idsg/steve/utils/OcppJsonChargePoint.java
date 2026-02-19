@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -137,8 +137,9 @@ public class OcppJsonChargePoint {
             } else if (ocppMsg instanceof OcppJsonCallForTesting testing) {
                 handleCall(testing);
             }
-        } catch (Exception e) {
-            log.error("Exception", e);
+        } catch (Throwable e) {
+            testerThreadInterruptReason = new RuntimeException(e);
+            testerThread.interrupt();
         } finally {
             if (receivedMessagesSignal != null) {
                 receivedMessagesSignal.countDown();

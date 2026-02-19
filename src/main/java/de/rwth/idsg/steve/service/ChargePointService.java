@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -131,9 +131,12 @@ public class ChargePointService {
         log.info("Deleted charge point with chargeBoxPk={} and chargeBoxId={}", chargeBoxPk, chargeBoxId);
 
         // https://github.com/steve-community/steve/issues/1871
-        var version = OcppProtocol.fromCompositeValue(details.getChargeBox().getOcppProtocol()).getVersion();
-        log.info("Closing all WebSocket sessions of chargeBoxPk={} and chargeBoxId={}", chargeBoxPk, chargeBoxId);
-        sessionContextStoreHolder.getOrCreate(version).closeSessions(chargeBoxId);
+        String ocppProtocol = details.getChargeBox().getOcppProtocol();
+        if (!StringUtils.isEmpty(ocppProtocol)) {
+            var version = OcppProtocol.fromCompositeValue(ocppProtocol).getVersion();
+            log.info("Closing all WebSocket sessions of chargeBoxPk={} and chargeBoxId={}", chargeBoxPk, chargeBoxId);
+            sessionContextStoreHolder.getOrCreate(version).closeSessions(chargeBoxId);
+        }
     }
 
     private void encodePasswordIfNeeded(ChargePointForm form) {
@@ -178,8 +181,8 @@ public class ChargePointService {
         var username = (String) authFromRequest.getPrincipal();
         var rawPassword = (String) authFromRequest.getCredentials();
 
-        if (!chargeBoxId.equals(username)) {
-            log.warn("The username '{}' (in Basic Auth) is not matching the ChargeBoxId '{}'", username, chargeBoxId);
+        if (!chargeBoxId.equalsIgnoreCase(username)) {
+            log.warn("Case-insensitive validation failed: Basic Auth username '{}' does not match ChargeBoxId '{}'", username, chargeBoxId);
             return false;
         }
 

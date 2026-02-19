@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -80,12 +80,20 @@ public class ReservationRepositoryImpl implements ReservationRepository {
                 CONNECTOR.CONNECTOR_ID
         );
 
+        if (form.isReservationIdSet()) {
+            selectQuery.addConditions(RESERVATION.RESERVATION_PK.in(form.getReservationId()));
+        }
+
+        if (form.isTransactionIdSet()) {
+            selectQuery.addConditions(RESERVATION.TRANSACTION_PK.in(form.getTransactionId()));
+        }
+
         if (form.isChargeBoxIdSet()) {
-            selectQuery.addConditions(CHARGE_BOX.CHARGE_BOX_ID.eq(form.getChargeBoxId()));
+            selectQuery.addConditions(CHARGE_BOX.CHARGE_BOX_ID.in(form.getChargeBoxId()));
         }
 
         if (form.isOcppIdTagSet()) {
-            selectQuery.addConditions(RESERVATION.ID_TAG.eq(form.getOcppIdTag()));
+            selectQuery.addConditions(RESERVATION.ID_TAG.in(form.getOcppIdTag()));
         }
 
         if (form.isUserIdSet()) {

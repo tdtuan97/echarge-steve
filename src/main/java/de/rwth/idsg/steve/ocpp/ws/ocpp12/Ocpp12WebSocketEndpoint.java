@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,9 +20,9 @@ package de.rwth.idsg.steve.ocpp.ws.ocpp12;
 
 import de.rwth.idsg.ocpp.jaxb.RequestType;
 import de.rwth.idsg.ocpp.jaxb.ResponseType;
+import de.rwth.idsg.steve.ocpp.OcppEnabledCondition;
 import de.rwth.idsg.steve.ocpp.OcppProtocol;
 import de.rwth.idsg.steve.ocpp.OcppVersion;
-import de.rwth.idsg.steve.ocpp.OcppEnabledCondition;
 import de.rwth.idsg.steve.ocpp.soap.CentralSystemService12_SoapServer;
 import de.rwth.idsg.steve.ocpp.ws.AbstractWebSocketEndpoint;
 import de.rwth.idsg.steve.ocpp.ws.FutureResponseContextStore;
@@ -40,7 +40,6 @@ import ocpp.cs._2010._08.StatusNotificationRequest;
 import ocpp.cs._2010._08.StopTransactionRequest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 /**
@@ -53,14 +52,13 @@ public class Ocpp12WebSocketEndpoint extends AbstractWebSocketEndpoint {
 
     private final CentralSystemService12_SoapServer server;
 
-    public Ocpp12WebSocketEndpoint(TaskScheduler taskScheduler,
-                                   OcppServerRepository ocppServerRepository,
+    public Ocpp12WebSocketEndpoint(OcppServerRepository ocppServerRepository,
                                    FutureResponseContextStore futureResponseContextStore,
                                    ApplicationEventPublisher applicationEventPublisher,
                                    CentralSystemService12_SoapServer server,
                                    SessionContextStoreHolder sessionContextStoreHolder,
                                    ChargePointMessageService chargePointMessageService) {
-        super(taskScheduler, ocppServerRepository, futureResponseContextStore, applicationEventPublisher, sessionContextStoreHolder, Ocpp12TypeStore.INSTANCE, chargePointMessageService);
+        super(ocppServerRepository, futureResponseContextStore, applicationEventPublisher, sessionContextStoreHolder, Ocpp12TypeStore.INSTANCE, chargePointMessageService);
         this.server = server;
     }
 

@@ -1,6 +1,6 @@
 /*
  * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2025 SteVe Community Team
+ * Copyright (C) 2013-2026 SteVe Community Team
  * All Rights Reserved.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -63,6 +63,9 @@ public enum JsonObjectMapper {
             .addModule(new Ocpp15JacksonModule())
             .addModule(new Ocpp16JacksonModule())
             .addModule(new JodaModule())
+            // https://github.com/steve-community/ocpp-jaxb/pull/25
+            // BeanValidationModule removed - package does not exist
+            // .addModule(BeanValidationModule.forReading(null))
             .annotationIntrospector(
                 AnnotationIntrospector.pair(
                     new JacksonAnnotationIntrospector(),
