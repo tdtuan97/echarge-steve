@@ -43,7 +43,7 @@ FROM base AS release
 
 # Copy relevant files from the build stage
 COPY --from=build /code/target/steve.war /app/steve.war
-COPY --from=build /code/target/libs /app/libs
+#COPY --from=build /code/target/libs /app/libs
 
 # Expose any necessary ports (example: 8080)
 EXPOSE 8080
