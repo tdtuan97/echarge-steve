@@ -1,6 +1,9 @@
 FROM eclipse-temurin:21-jdk AS base
 MAINTAINER daynnnnn
 
+# Build Stage
+FROM base as build
+
 # Setting environment variables
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
@@ -10,9 +13,6 @@ ARG DB_USERNAME
 ARG DB_PASSWORD
 ARG DB_DATABASE
 ARG DB_PORT
-
-# Build Stage
-FROM base as build
 
 # Set the working directory for the build stage
 WORKDIR /code
