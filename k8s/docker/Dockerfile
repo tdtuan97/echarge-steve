@@ -42,7 +42,7 @@ RUN ./mvnw clean package -Pkubernetes -Djdk.tls.client.protocols="TLSv1,TLSv1.1,
 FROM base AS release
 
 # Copy relevant files from the build stage
-COPY --from=build /code/target/steve.jar /app/steve.war
+COPY --from=build /code/target/steve.war /app/steve.war
 COPY --from=build /code/target/libs /app/libs
 
 # Expose any necessary ports (example: 8080)
