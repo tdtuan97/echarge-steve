@@ -53,7 +53,7 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
     private final CertificateValidator certificateValidator;
 
     public static final String PATH_INFIX = "/websocket/central-system/";
-    public static final Duration PING_INTERVAL = Duration.ofMinutes(45);
+    public static final Duration PING_INTERVAL = Duration.ofSeconds(30);
     public static final Duration IDLE_TIMEOUT = Duration.ofHours(2);
     public static final int MAX_MSG_SIZE = 8_388_608; // 8 MB for max message size
 
