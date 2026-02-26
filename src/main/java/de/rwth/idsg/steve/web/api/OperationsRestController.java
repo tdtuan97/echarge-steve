@@ -101,11 +101,6 @@ public class OperationsRestController {
         res.put("result", taskResult);
         res.put("charge_box_id", chargeBoxId);
         res.put("task_id", taskId);
-        try {
-            remoteTransactionEventPublisher.publishTaskStatusChecked(taskId, chargeBoxId, taskResult);
-        } catch (Exception e) {
-            log.warn("Failed to publish task status checked event for task_id={}", taskId, e);
-        }
         return res.toString();
     }
 }
