@@ -26,7 +26,6 @@ import de.rwth.idsg.steve.ocpp.OcppProtocol;
 import de.rwth.idsg.steve.repository.TaskStore;
 import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
 import de.rwth.idsg.steve.service.ChargePointServiceClient;
-import de.rwth.idsg.steve.service.messaging.RemoteTransactionEventPublisher;
 import de.rwth.idsg.steve.web.dto.ocpp.ResetParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,9 +53,6 @@ public class OperationsRestController {
 
     @Autowired
     private ChargePointServiceClient chargePointServiceClient;
-
-    @Autowired
-    private RemoteTransactionEventPublisher remoteTransactionEventPublisher;
 
     // @PostMapping(value = "reset")
     // @ResponseBody
