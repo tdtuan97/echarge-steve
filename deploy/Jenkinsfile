@@ -24,8 +24,8 @@ pipeline {
 		def GITHUB_CREDENTIAL = "github-sshkey"
 		def GITHUB_TOKEN_CREDENTIAL_ID = 'github-token'
 
-        def DB_OCPP_HOST_ID     = 'dev-database-host'
-        def DB_OCPP_ACCOUNT_ID  = 'dev-database-account'
+        def DB_OCPP_HOST_ID     = 'dev-aws-db-host'
+        def DB_OCPP_ACCOUNT_ID  = 'dev-aws-db-account'
         def OCPP_DB_SCHEMA      = 'ocpp_stevedb'
 
         // NATS CREDENTIALS
@@ -50,8 +50,8 @@ pipeline {
                     env.HELM_FOLDER = './evc-helm/prod/evc-ocpp/evc-steve'
                     ENV_FILE = './src/main/resources/application-kubernetes.properties'
 
-                    env.DB_OCPP_HOST_ID = 'evc-prod-db-ocpp-host'
-                    env.DB_OCPP_ACCOUNT_ID = 'evc-prod-db-ocpp-account'
+                    env.DB_OCPP_HOST_ID = 'evc-prod-aws-db-host'
+                    env.DB_OCPP_ACCOUNT_ID = 'evc-prod-aws-db-account'
                     env.OCPP_DB_SCHEMA = 'ocpp_stevedb'
 
                     env.NATS_ACCOUNT_ID = 'evc-prod-nats-account'
