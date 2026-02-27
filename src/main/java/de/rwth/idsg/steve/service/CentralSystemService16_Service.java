@@ -284,7 +284,7 @@ public class CentralSystemService16_Service {
         ocppServerRepository.updateChargeboxHeartbeat(chargeBoxIdentity, now);
         HeartbeatResponse response = new HeartbeatResponse().withCurrentTime(now);
         Map<String, Object> heartbeatPayload = buildHeartbeatPayload(response);
-        chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.HEARTBEAT, heartbeatPayload));
+        //chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.HEARTBEAT, heartbeatPayload));
         return response;
     }
 
