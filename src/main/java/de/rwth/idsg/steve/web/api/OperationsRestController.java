@@ -18,15 +18,12 @@
  */
 package de.rwth.idsg.steve.web.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import de.rwth.idsg.steve.SteveException;
 import de.rwth.idsg.steve.ocpp.CommunicationTask;
-import de.rwth.idsg.steve.ocpp.OcppProtocol;
+import de.rwth.idsg.steve.ocpp.RequestResult;
 import de.rwth.idsg.steve.repository.TaskStore;
-import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
 import de.rwth.idsg.steve.service.ChargePointServiceClient;
-import de.rwth.idsg.steve.web.dto.ocpp.ResetParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.tools.json.JSONObject;
@@ -34,8 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,49 +49,46 @@ public class OperationsRestController {
     @Autowired
     private ChargePointServiceClient chargePointServiceClient;
 
-    // @PostMapping(value = "reset")
-    // @ResponseBody
-    // public String reset(@RequestBody JSONObject params) {
-    //     if (params.get("resetType") == null) {
-    //         throw new SteveException("Reset type is required");
-    //     }
-    //     if (params.get("chargeBoxId") == null) {
-    //         throw new SteveException("Charge box ID is required");
-    //     }
-    //     ResetParams resetParams = new ResetParams();
-    //     resetParams.setResetType(ResetType.valueOf(params.get("resetType").toString()));
-    //     List<ChargePointSelect> chargePointSelectList = new ArrayList<>();
-    //     chargePointSelectList.add(new ChargePointSelect(OcppProtocol.V_16_JSON, params.get("chargeBoxId").toString()));
-    //     resetParams.setChargePointSelectList(chargePointSelectList);
-    //     Integer taskId = chargePointServiceClient.reset(resetParams);
-    //     JSONObject res = new JSONObject();
-    //     res.put("status", "success");
-    //     res.put("task_id", taskId);
-    //     return res.toString();
-    // }
+
+    private static final String DATA_SEPARATOR = " / Data: ";
 
     @GetMapping("task/{taskId}")
     @ResponseBody
     public String checkRequest(@PathVariable("taskId") Integer taskId) {
-        String chargeBoxId = null;
-        JSONObject taskResult = null;
-        ObjectMapper objectMapper = new ObjectMapper();
+        String chargeBoxId;
+        RequestResult requestResult;
         try {
             CommunicationTask communicationTask = taskStore.get(taskId);
-            Map.Entry<String, Object> firstEntry = (Map.Entry<String, Object>) communicationTask.getResultMap().entrySet().iterator().next();
+            Map.Entry<String, RequestResult> firstEntry = communicationTask.getResultMap().entrySet().iterator().next();
             chargeBoxId = firstEntry.getKey();
-            String jsonString = objectMapper.writeValueAsString(firstEntry.getValue());
-            Map map = objectMapper.readValue(jsonString, Map.class);
-            taskResult = new JSONObject(map);
+            requestResult = firstEntry.getValue();
         } catch (SteveException e) {
             throw new SteveException("Task not found");
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to convert JSON");
         }
+
+        // Parse the response string: "Accepted / Data: {json}" or just "Accepted"
+        String responseStr = requestResult.getResponse();
+        String status = responseStr;
+        JSONObject result = null;
+
+        if (responseStr != null) {
+            result = new JSONObject();
+            int dataIdx = responseStr.indexOf(DATA_SEPARATOR);
+            if (dataIdx >= 0) {
+                status = responseStr.substring(0, dataIdx);
+                result.put("status", status);
+                result.put("data", responseStr.substring(dataIdx + DATA_SEPARATOR.length()));
+            } else {
+                result.put("status", responseStr);
+            }
+        }
+
         JSONObject res = new JSONObject();
-        res.put("result", taskResult);
-        res.put("charge_box_id", chargeBoxId);
+        res.put("status", status);
+        res.put("errorMessage", requestResult.getErrorMessage());
+        res.put("result", result);
         res.put("task_id", taskId);
+        res.put("charge_box_id", chargeBoxId);
         return res.toString();
     }
 }
