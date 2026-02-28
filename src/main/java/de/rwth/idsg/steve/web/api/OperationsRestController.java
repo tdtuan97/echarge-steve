@@ -59,7 +59,7 @@ public class OperationsRestController {
         RequestResult requestResult;
         try {
             CommunicationTask communicationTask = taskStore.get(taskId);
-            Map.Entry<String, RequestResult> firstEntry = communicationTask.getResultMap().entrySet().iterator().next();
+            Map.Entry<String, RequestResult> firstEntry = (Map.Entry<String, RequestResult>) communicationTask.getResultMap().entrySet().iterator().next();
             chargeBoxId = firstEntry.getKey();
             requestResult = firstEntry.getValue();
         } catch (SteveException e) {
