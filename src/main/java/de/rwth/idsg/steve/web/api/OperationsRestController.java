@@ -65,28 +65,34 @@ public class OperationsRestController {
         } catch (SteveException e) {
             throw new SteveException("Task not found");
         }
+        // Old result (backward compatible)
+        JSONObject resultObj = new JSONObject();
+        resultObj.put("errorMessage", requestResult.getErrorMessage());
+        resultObj.put("response", requestResult.getResponse());
+        resultObj.put("details", requestResult.getDetails());
 
-        // Parse the response string: "Accepted / Data: {json}" or just "Accepted"
+        // Extract payload (raw data string from charge point response)
         String responseStr = requestResult.getResponse();
-        String status = responseStr;
-        JSONObject result = null;
+        String status;
+        String payload = null;
 
         if (responseStr != null) {
-            result = new JSONObject();
             int dataIdx = responseStr.indexOf(DATA_SEPARATOR);
             if (dataIdx >= 0) {
                 status = responseStr.substring(0, dataIdx);
-                result.put("status", status);
-                result.put("data", responseStr.substring(dataIdx + DATA_SEPARATOR.length()));
+                payload = responseStr.substring(dataIdx + DATA_SEPARATOR.length());
             } else {
-                result.put("status", responseStr);
+                status = responseStr;
             }
+        } else {
+            status = requestResult.getErrorMessage() != null ? "Failed" : null;
         }
 
         JSONObject res = new JSONObject();
         res.put("status", status);
         res.put("errorMessage", requestResult.getErrorMessage());
-        res.put("result", result);
+        res.put("result", resultObj);
+        res.put("payload", payload);
         res.put("task_id", taskId);
         res.put("charge_box_id", chargeBoxId);
         return res.toString();
