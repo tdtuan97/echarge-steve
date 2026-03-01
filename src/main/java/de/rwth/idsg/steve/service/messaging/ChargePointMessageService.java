@@ -65,7 +65,7 @@ public class ChargePointMessageService {
         if (params == null) {
             return;
         }
-        log.info("🔍 ------------ Server name: {}", serverName);
+        //log.info("🔍 ------------ Server name: {}", serverName);
         String tenantTypeValue = Objects.toString(params.getTenantType(), "").trim().isEmpty() ? DEFAULT_TENANT_TYPE
                 : params.getTenantType();
         String tenantCodeValue = Objects.toString(params.getTenantCode(), "").trim().isEmpty() ? DEFAULT_TENANT_CODE
