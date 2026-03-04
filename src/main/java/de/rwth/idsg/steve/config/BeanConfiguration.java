@@ -134,7 +134,7 @@ public class BeanConfiguration implements WebMvcConfigurer {
     public ThreadPoolTaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         //scheduler.setPoolSize(10);
-        scheduler.setPoolSize(20);
+        scheduler.setPoolSize(100);
         scheduler.setThreadNamePrefix("SteVe-TaskScheduler-");
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
         scheduler.setAwaitTerminationSeconds(30);
