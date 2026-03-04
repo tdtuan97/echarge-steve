@@ -190,12 +190,13 @@ public class CentralSystemService16_Service {
     public MeterValuesResponse meterValues(MeterValuesRequest parameters, String chargeBoxIdentity) {
         Integer transactionId = getTransactionId(parameters);
 
-        ocppServerRepository.insertMeterValues(
-                chargeBoxIdentity,
-                parameters.getMeterValue(),
-                parameters.getConnectorId(),
-                transactionId
-        );
+        // Test for performance
+        // ocppServerRepository.insertMeterValues(
+        //         chargeBoxIdentity,
+        //         parameters.getMeterValue(),
+        //         parameters.getConnectorId(),
+        //         transactionId
+        // );
         Map<String, Object> meterPayload = buildMeterUpdatedPayload(parameters, transactionId);
         chargePointMessageService.publishChargePointEvent(buildPublishParams(chargeBoxIdentity, ChargePointEventType.METER_UPDATED, meterPayload));
         return new MeterValuesResponse();
